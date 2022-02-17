@@ -294,9 +294,23 @@ List<User> users = userMapper.selectAll();
 
 <img src="images/image-20220129175317147.png" alt="image-20220129175317147" style="zoom:67%;" />
 
+**最后的最后**
+
+我们前面那个mybatis-config.xml中加载映射文件，每次要写全限定名，是不是很麻烦啊，以后可能有几十个需要加载，那不完蛋了。所以说Mybatis给我们想好了。
+
+只要我们使用的是代理开发模式，我们就可以采用Mapper代理的方式加载，原理是包扫描的方式加载SQL映射文件。它会自动加载这个包下面的所有SQL映射文件（注意，编译后，我们所有Mapper.xml都放在了包下面哦，细品，真的牛）
+
+```java
+    <!--加载resources下的SQL的映射文件-->
+        <package name="com.CCooky.mapper"/>
+    </mappers>
+```
+
 **第二步：**
 
-设置SQL映射文件的namespace为Mapper接口全限定名。
+每一个Mapper.xml都要设置对应的代理开发的接口
+
+设置SQL映射文件的namespace为代理Mapper接口==全限定名==。
 
 <img src="images/image-20220129174235449.png" alt="image-20220129174235449" style="zoom:80%;" />
 
@@ -513,38 +527,39 @@ public interface UserMapper {
 
   
 
-* **安装 MyBatisX 插件**
 
-  * MybatisX 是一款基于 IDEA 的快速开发插件，为效率而生。
+#### **安装 MyBatisX 插件**
 
-  * 主要功能
+* MybatisX 是一款基于 IDEA 的快速开发插件，为效率而生。
 
-    * SQL映射配置文件 和 接口方法 间相互跳转
-    * 根据接口方法生成 statement 。（statement就是前面我们在Mapper写的SQl语句，专业术语叫做statement）
+* 主要功能
 
-  * 安装方式
+  * SQL映射配置文件 和 接口方法 间相互跳转
+  * 根据接口方法生成 statement 。（statement就是前面我们在Mapper写的SQl语句，专业术语叫做statement）
 
-    点击 `file` ，选择 `settings` ，就能看到如下图所示界面
+* 安装方式
 
-    <img src="images/image-20210729113304743.png" alt="image-20210729113304743" style="zoom:80%;" />
+  点击 `file` ，选择 `settings` ，就能看到如下图所示界面
 
-    > 注意：安装完毕后需要重启IDEA
+  <img src="images/image-20210729113304743.png" alt="image-20210729113304743" style="zoom:80%;" />
 
-  * 插件效果
+  > 注意：安装完毕后需要重启IDEA
 
-    <img src="images/image-20210729164450524.png" alt="image-20210729164450524" style="zoom: 80%;" />
+* 插件效果
 
-    红色头绳的表示映射配置文件，蓝色头绳的表示mapper接口。
+  <img src="images/image-20210729164450524.png" alt="image-20210729164450524" style="zoom: 80%;" />
 
-    在mapper接口点击红色头绳的小鸟图标会自动跳转到对应的映射配置文件。
+  红色头绳的表示映射配置文件，蓝色头绳的表示mapper接口。
 
-    在映射配置文件中点击蓝色头绳的小鸟图标会自动跳转到对应的mapper接口。也可以在mapper接口中定义方法，自动生成映射配置文件中的 `statement` ，如图所示
+  在mapper接口点击红色头绳的小鸟图标会自动跳转到对应的映射配置文件。
 
-    <img src="images/image-20220129205326527.png" alt="image-20220129205326527" style="zoom:80%;" />
+  在映射配置文件中点击蓝色头绳的小鸟图标会自动跳转到对应的mapper接口。也可以在mapper接口中定义方法，自动生成映射配置文件中的 `statement` ，如图所示
 
-    <img src="images/image-20220129205409259.png" alt="image-20220129205409259" style="zoom:80%;" />
+  <img src="images/image-20220129205326527.png" alt="image-20220129205326527" style="zoom:80%;" />
 
-    自动帮我们在Mapper.xml里面就创建好了statement（sql语句），并且指定了id，自动填充了返回值类型（只是说没有使用别名）。
+  <img src="images/image-20220129205409259.png" alt="image-20220129205409259" style="zoom:80%;" />
+
+  自动帮我们在Mapper.xml里面就创建好了statement（sql语句），并且指定了id，自动填充了返回值类型（只是说没有使用别名）。
 
 ## 3. 查询所有数据
 
