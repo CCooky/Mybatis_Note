@@ -227,6 +227,18 @@ public static void main(String[] args) throws IOException {
 
 <img src="images/image-20220129165128778.png" alt="image-20220129165128778" style="zoom:80%;" />
 
+### IDEA写SQL语句无代码提示
+
+IDEA连接MySQL数据库，没有代码提示的设置：
+
+setting里面搜索SQl dialects，然后设置成为MySQL就行
+
+![image-20220129212009007](images/image-20220129212009007.png)
+
+第二步，在IDEA里面连接上你的项目数据库就行，over
+
+<img src="../../Java/Images/image-20220216105952470.png" alt="image-20220216105952470" style="zoom:80%;" />
+
 ## 3. Mapper代理开发
 
 ### 概述
@@ -603,12 +615,6 @@ public interface BrandMapper {
 
 ### 3.2 编写SQl语句
 
-IDEA连接MySQL数据库，没有代码提示的设置：
-
-setting里面搜索SQl dialects，然后设置成为MySQL就行
-
-![image-20220129212009007](images/image-20220129212009007.png)
-
 ```xml
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper
@@ -861,7 +867,7 @@ SE部分都讲过了一遍。
 
   <img src="images/image-20210729185030318.png" alt="image-20210729185030318" style="zoom:60%;" />
 
-##5.  多条件查询
+## 5.  多条件查询
 
 ![image-20220130114515072](images/image-20220130114515072.png)
 
