@@ -200,6 +200,10 @@ public class User {
 
 <img src="images/image-20220129164418268.png" alt="image-20220129164418268" style="zoom:67%;" />
 
+![image-20220218163512745](images/image-20220218163512745.png)
+
+这里先要构建我们Mybatis的sqlSessionFactory对象。
+
 ```java
 public static void main(String[] args) throws IOException {
 
@@ -223,6 +227,42 @@ public static void main(String[] args) throws IOException {
 }
 ```
 
+### SqlSessionFactory工具类抽取
+
+从我们的Mybatis的实现可以知道，每次使用的时候都需要写那三行代码来创建我们的工厂对象，这个对象是执行sql的核心，创建同时也会建立线程池等。以后我们在写后端资源的时候，以Servlet为例，每写一个资源都需要加上这三行代码，这就一引起代码重复问题，二是创建很多的工厂对象和线程池，极大占用后台资源，所以这个SqlSessionFactory工厂对象，我们希望只创建一次！！！
+
+<img src="images/image-20220218164115943.png" alt="image-20220218164115943" style="zoom:80%;" />
+
+```java
+package com.CCooky.util;
+
+import org.apache.ibatis.io.Resources;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+
+import java.io.IOException;
+import java.io.InputStream;
+
+public class SqlSessionFactoryUtils {
+
+    private static SqlSessionFactory sqlSessionFactory;
+    static {
+        try {
+            String resource = "org/mybatis/example/mybatis-config.xml";
+            InputStream inputStream = Resources.getResourceAsStream(resource);
+            SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public static SqlSessionFactory getSqlSessionFactory(){
+            return sqlSessionFactory;
+    }
+}
+```
+
+
+
 ### SQL映射文件警告提示
 
 <img src="images/image-20220129165128778.png" alt="image-20220129165128778" style="zoom:80%;" />
@@ -237,7 +277,15 @@ setting里面搜索SQl dialects，然后设置成为MySQL就行
 
 第二步，在IDEA里面连接上你的项目数据库就行，over
 
-<img src="../../Java/Images/image-20220216105952470.png" alt="image-20220216105952470" style="zoom:80%;" />
+<img src="images/image-20220217201934790.png" alt="image-20220217201934790" style="zoom:80%;" />
+
+<img src="images/image-20220217202108578.png" alt="image-20220217202108578" style="zoom:80%;" />
+
+### 增删改一定要提交事务
+
+```java
+sqlSession.commit();
+```
 
 ## 3. Mapper代理开发
 
@@ -318,7 +366,7 @@ List<User> users = userMapper.selectAll();
     </mappers>
 ```
 
-**第二步：**
+**第二步：xml文件配置代理接口**
 
 每一个Mapper.xml都要设置对应的代理开发的接口
 
@@ -328,7 +376,7 @@ List<User> users = userMapper.selectAll();
 
 智能提示，牛的哇，Maven很细节，首先他的目录结构给你创建好了，java下放源代码，resources下方配置文件。然后只有java下面可以创建包，resources只能创建目录，这样所有的包不都在java下面了吗，所以写全限定名的时候，只要写这个 ‘’com.CCooky.mapper.UserMapper‘’ 就行了，前面的main包、java包都不用写，他会自动取java下面查找，Maven都给你整清楚了。
 
-**第三步：**
+**第三步：编写代理接口**
 
 ```java
 public interface UserMapper {
@@ -351,7 +399,7 @@ public interface UserMapper {
 </mapper>
 ```
 
-**第四步：**
+**第四步：执行SQl语句**
 
 最后了，编码就行了
 
@@ -415,8 +463,8 @@ public interface UserMapper {
     针对SQL映射文件里面的resultType而言，可以简写返回值类型
     类型别名可为 Java 类型设置一个缩写名字,仅用于XML配置,意在降低冗余的全限定类名书写
     在没有注解的情况下，会使用 Bean 的首字母小写的非限定类名来作为它的别名。
-		包扫描器
-    -->
+-->
+		扫描的是java目录下面的，这样就不用写全限定名
     <typeAliases>
         <package name="com.CCooky.pojo"/>
     </typeAliases>
@@ -451,6 +499,7 @@ public interface UserMapper {
   
     <mappers>
         <!--加载SQL的映射文件，包扫描器-->
+      扫描的是resources目录下面的
         <package name="com.CCooky.mapper"/>
     </mappers>
 </configuration>
@@ -1261,7 +1310,7 @@ public void testAdd() throws IOException {
 
 ==解决办法==，
 
-手动再执行完方法后添加一行代码，提交事务：
+==手动再执行完方法后添加一行代码，提交事务：==
 
 ```java
         //提交事务
@@ -1596,22 +1645,24 @@ Mybatis 接口方法中可以接收的参数类型如下，如下：
   * Array 类型
   * 其他类型
 
-### 11.1  多个参数（使用较少）
+### 11.1  多个参数
 
-    * 多个参数：封装为Map集合,可以使用@Param注解，替换Map集合中默认的arg键名
-        map.put("arg0",参数值1)
-        map.put("param1",参数值1)
-        map.put("param2",参数值2)
-        map.put("agr1",参数值2)
-        ---------------@Param("username")
-        map.put("username",参数值1)
-        map.put("param1",参数值1)
-        map.put("param2",参数值2)
-        map.put("agr1",参数值2)
+```java
+* 多个参数：Mybatis原理是将其封装为Map集合,可以使用@Param注解，替换Map集合中默认的arg键名
+    map.put("arg0",参数值1)
+    map.put("param1",参数值1)
+    map.put("param2",参数值2)
+    map.put("agr1",参数值2)
+    ---------------@Param("username")
+    map.put("username",参数值1)
+    map.put("param1",参数值1)
+    map.put("param2",参数值2)
+    map.put("agr1",参数值2)
+```
 如下面的代码，就是接收两个参数，而接收多个参数需要使用 `@Param` 注解，那么为什么要加该注解呢？这个问题要弄明白就必须来研究Mybatis 底层对于这些参数是如何处理的。
 
 ```java
-User select(@Param("username") String username,@Param("password") String password);
+User select(@Param("username1") String username,@Param("password1") String password);
 ```
 
 ```xml
@@ -1619,10 +1670,14 @@ User select(@Param("username") String username,@Param("password") String passwor
 	select *
     from tb_user
     where 
-    	username=#{username}
-    	and password=#{password}
+    	username=#{username1}
+    	and password=#{password1}
 </select>
 ```
+
+- **下面是具体原理的解析**
+
+
 
 我们在接口方法中定义多个参数，Mybatis 会将这些参数封装成 Map 集合对象，值就是传递的参数值，而键在没有使用 `@Param` 注解时有以下命名规则：
 
@@ -1674,7 +1729,7 @@ User select(@Param("username") String username,@Param("password") String passwor
 
   <img src="images/image-20210805230303461.png" alt="image-20210805230303461" style="zoom:80%;" />
 
-  在映射配合文件的SQL语句中使用用 `arg` 开头的和 `param` 书写，代码的可读性会变的特别差，此时可以使用 `@Param` 注解。
+在映射配合文件的SQL语句中使用用 `arg` 开头的和 `param` 书写，代码的可读性会变的特别差，此时可以使用 `@Param` 注解。
 
 在接口方法参数上使用 `@Param` 注解，Mybatis 会将 `arg` 开头的键名替换为对应注解的属性值。
 
@@ -1725,6 +1780,30 @@ User select(@Param("username") String username,@Param("password") String passwor
   ![image-20210805231727206](images/image-20210805231727206.png)
 
 ==结论：以后接口参数是多个时，在每个参数上都使用 `@Param` 注解。这样代码的可读性更高。==
+
+##### 传递自定义对象和数组
+
+```java
+boolean updateByIds(@Param("ids") String[] ids, @Param("bridgeAlertRecord") BridgeAlertRecord bridgeAlertRecord);
+```
+
+```xml
+<update id="updateByIds">
+        update bridge_alert_record
+        set
+            is_deal = #{bridgeAlertRecord.isDeal},
+            deal_result = #{bridgeAlertRecord.dealResult},
+            deal_content = #{bridgeAlertRecord.dealContent}
+        where id in
+            <foreach collection="ids" item="id" separator="," open="(" close=")">
+                #{id}
+            </foreach>
+</update>
+```
+
+
+
+
 
 ### 11.2 单个参数
 
