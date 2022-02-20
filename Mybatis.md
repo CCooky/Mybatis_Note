@@ -505,6 +505,270 @@ public interface UserMapper {
 </configuration>
 ```
 
+## 5.  Mybatis参数传递
+
+正如前面所看见的，我们Mapper接口与Mapper.xml（SQL映射文件）的参数关系。在映射文件中，我们不用写接收参数的代码，就是直接拿传入的参数在使用，然后Mapper接口方法的参数需要按照一定的标准才行！！！下面详细解释一下。
+
+Mybatis 接口方法中可以接收的参数类型如下，如下：
+
+* 多个参数（使用较少）
+* 单个参数：单个参数又可以是如下类型
+  * POJO 类型（类似Javabean）
+  * Map 集合类型
+  * Collection 集合类型
+  * List 集合类型
+  * Array 类型
+  * 其他类型
+
+### 5.1  多个参数
+
+```java
+* 多个参数：Mybatis原理是将其封装为Map集合,可以使用@Param注解，替换Map集合中默认的arg键名
+    map.put("arg0",参数值1)
+    map.put("param1",参数值1)
+    map.put("param2",参数值2)
+    map.put("agr1",参数值2)
+    ---------------@Param("username")
+    map.put("username",参数值1)
+    map.put("param1",参数值1)
+    map.put("param2",参数值2)
+    map.put("agr1",参数值2)
+```
+
+如下面的代码，就是接收两个参数，而接收多个参数需要使用 `@Param` 注解，那么为什么要加该注解呢？这个问题要弄明白就必须来研究Mybatis 底层对于这些参数是如何处理的。
+
+```java
+User select(@Param("username1") String username,@Param("password1") String password);
+```
+
+```xml
+<select id="select" resultType="user">
+	select *
+    from tb_user
+    where 
+    	username=#{username1}
+    	and password=#{password1}
+</select>
+```
+
+- **下面是具体原理的解析**
+
+
+
+我们在接口方法中定义多个参数，Mybatis 会将这些参数封装成 Map 集合对象，值就是传递的参数值，而键在没有使用 `@Param` 注解时有以下命名规则：
+
+* 以 arg 开头  ：第一个参数就叫 arg0，第二个参数就叫 arg1，以此类推。如：
+
+  > map.put("arg0"，参数值1);
+  >
+  > map.put("arg1"，参数值2);
+
+* 以 param 开头 ： 第一个参数就叫 param1，第二个参数就叫 param2，依次类推。如：
+
+  > map.put("param1"，参数值1);
+  >
+  > map.put("param2"，参数值2);
+
+**代码验证：**
+
+* 在 `UserMapper` 接口中定义如下方法
+
+  ```java
+  User select(String username,String password);
+  ```
+
+* 在 `UserMapper.xml` 映射配置文件中定义SQL
+
+  ```xml
+  <select id="select" resultType="user">
+  	select *
+      from tb_user
+      where 
+      	username=#{arg0}
+      	and password=#{arg1}
+  </select>
+  ```
+
+  或者
+
+  ```xml
+  <select id="select" resultType="user">
+  	select *
+      from tb_user
+      where 
+      	username=#{param1}
+      	and password=#{param2}
+  </select>
+  ```
+
+* 运行代码结果如下
+
+  <img src="images/image-20210805230303461.png" alt="image-20210805230303461" style="zoom:80%;" />
+
+在映射配合文件的SQL语句中使用用 `arg` 开头的和 `param` 书写，代码的可读性会变的特别差，此时可以使用 `@Param` 注解。
+
+在接口方法参数上使用 `@Param` 注解，Mybatis 会将 `arg` 开头的键名替换为对应注解的属性值。
+
+**代码验证：**
+
+* 在 `UserMapper` 接口中定义如下方法，在 `username` 参数前加上 `@Param` 注解
+
+  ```java
+  User select(@Param("username") String username, String password);
+  ```
+
+  Mybatis 在封装 Map 集合时，键名就会变成如下：
+
+  > map.put("username"，参数值1);
+  >
+  > map.put("arg1"，参数值2);
+  >
+  > map.put("param1"，参数值1);
+  >
+  > map.put("param2"，参数值2);
+
+* 在 `UserMapper.xml` 映射配置文件中定义SQL
+
+  ```xml
+  <select id="select" resultType="user">
+  	select *
+      from tb_user
+      where 
+      	username=#{username}
+      	and password=#{param2}
+  </select>
+  ```
+
+* 运行程序结果没有报错。而如果将 `#{}` 中的 `username` 还是写成  `arg0` 
+
+  ```xml
+  <select id="select" resultType="user">
+  	select *
+      from tb_user
+      where 
+      	username=#{arg0}
+      	and password=#{param2}
+  </select>
+  ```
+
+* 运行程序则可以看到错误
+
+  ![image-20210805231727206](images/image-20210805231727206.png)
+
+==结论：以后接口参数是多个时，在每个参数上都使用 `@Param` 注解。这样代码的可读性更高。==
+
+#### 传递自定义对象和数组
+
+```java
+boolean updateByIds(@Param("ids") String[] ids, @Param("bridgeAlertRecord") BridgeAlertRecord bridgeAlertRecord);
+```
+
+```xml
+<update id="updateByIds">
+        update bridge_alert_record
+        set
+            is_deal = #{bridgeAlertRecord.isDeal},
+            deal_result = #{bridgeAlertRecord.dealResult},
+            deal_content = #{bridgeAlertRecord.dealContent}
+        where id in
+            <foreach collection="ids" item="id" separator="," open="(" close=")">
+                #{id}
+            </foreach>
+</update>
+```
+
+### 5.2 单个参数
+
+```
+/*
+  MyBatis 参数封装：
+    * 单个参数：
+        1. POJO类型：直接使用，属性名 和 参数占位符名称 一致
+        2. Map集合：直接使用，键名 和 参数占位符名称 一致
+        3. Collection：封装为Map集合，可以使用@Param注解，替换Map集合中默认的arg键名
+            map.put("arg0",collection集合);
+            map.put("collection",collection集合);
+        4. List：封装为Map集合，可以使用@Param注解，替换Map集合中默认的arg键名
+            map.put("arg0",list集合);
+            map.put("collection",list集合);
+            map.put("list",list集合);
+        5. Array：封装为Map集合，可以使用@Param注解，替换Map集合中默认的arg键名
+            map.put("arg0",数组);
+            map.put("array",数组);
+        6. 其他类型：直接使用，例如单个的int参数
+       
+```
+
+* POJO 类型
+
+  直接使用。要求 `属性名` 和 `参数占位符名称` 一致
+
+* Map 集合类型
+
+  直接使用。要求 `map集合的键名` 和 `参数占位符名称` 一致
+
+* Collection 集合类型
+
+  Mybatis 会将集合封装到 map 集合中，如下：
+
+  > map.put("arg0"，collection集合);
+  >
+  > map.put("collection"，collection集合;
+
+  ==可以使用 `@Param` 注解替换map集合中默认的 arg 键名。==
+
+* List 集合类型
+
+  Mybatis 会将集合封装到 map 集合中，如下：
+
+  > map.put("arg0"，list集合);
+  >
+  > map.put("collection"，list集合);
+  >
+  > map.put("list"，list集合);
+
+  ==可以使用 `@Param` 注解替换map集合中默认的 arg 键名。==
+
+* Array 类型
+
+  Mybatis 会将集合封装到 map 集合中，如下：
+
+  > map.put("arg0"，数组);
+  >
+  > map.put("array"，数组);
+
+  ==可以使用 `@Param` 注解替换map集合中默认的 arg 键名。==
+
+* 其他类型
+
+  比如int类型，`参数占位符名称` 叫什么都可以。尽量做到见名知意
+
+## 6. 注意事项
+
+### 6.1 查询时间段
+
+不能直接用between...and...很不好用，而且容易报错.用下面这种方式，good，专业优雅
+
+```xml
+<if test="startTime !=null and startTime !='' ">
+         <![CDATA[ and createTime  >=  #{startTime}  ]]>
+</if>
+<if test="endTime !=null and endTime!='' "  >
+         <![CDATA[ and createTime <=  #{endTime}  ]]>
+</if>
+```
+
+### 6.2 更新数据时更新时间字段
+
+```sql
+update goods_msg SET update_date = DATE_FORMAT(NOW(),'%Y-%m-%d %H:%i:%s') WHERE id = '1111122222';
+-- 对应时间格式2022-2-20 12:30:30
+```
+
+
+
+
+
 # 大型案例
 
 ## 1. 需求
