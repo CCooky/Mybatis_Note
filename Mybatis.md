@@ -448,9 +448,19 @@ public interface UserMapper {
 
 在Mybatis的官网里面，有详细的配置信息。这里先只涉及到了三个内容，以后涉及到了以后再补充。详细的解析取官网，我已经写了在代码注释部分。
 
+- **将具体执行的SQL语句打印到控制台**
+
+  ```xml
+  	<settings>
+  <setting name="logImpl" value="STDOUT_LOGGING" />
+    </settings>
+  ```
+
 <img src="images/image-20220129201427906.png" alt="image-20220129201427906" style="zoom: 80%;" />
 
 ==注意：一定要按照别人写的这个标签顺序来写配置文件，因为这是别人的约束嘛，xml的约束方式之一。==
+
+- **通用配置**
 
 ```xml
 <?xml version="1.0" encoding="UTF-8" ?>
