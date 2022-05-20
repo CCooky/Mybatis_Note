@@ -351,6 +351,75 @@ public class Test111 {
 
 使用SpringBoot将进一步的简化MP的整合，需要注意的是，由于使用SpringBoot需要继承parent，所以需要重新创建工程，并不是创建子Module。
 
+技术选型：MybatisPlus+Druid
+
+**步骤①**：导入MyBatisPlus与Druid对应的starter
+
+```xml
+<dependency>
+    <groupId>com.baomidou</groupId>
+    <artifactId>mybatis-plus-boot-starter</artifactId>
+    <version>3.4.3</version>
+</dependency>
+<dependency>
+    <groupId>com.alibaba</groupId>
+    <artifactId>druid-spring-boot-starter</artifactId>
+    <version>1.2.6</version>
+</dependency>
+```
+
+**步骤②**：配置数据库连接相关的数据源配置。
+
+<font color="#f0f"><b>温馨提示</b></font>
+
+​	MP技术默认的主键生成策略为雪花算法，生成的主键ID长度较大，和目前的数据库设定规则不相符，需要配置一下使MP使用数据库的主键生成策略，方式嘛还是老一套，做配置。
+
+```yml
+server:
+  port: 80
+
+spring:
+  datasource:
+    druid:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://localhost:3306/studysql?useSSL=false&serverTimezone=UTC
+      username: root
+      password: 5240zhouquan
+      
+mybatis-plus:
+  global-config:
+    db-config:
+      id-type: auto		#设置主键id字段的生成策略为数据库自增
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl   # 开启MP运行日志
+```
+
+此处设置的是日志的显示形式，当前配置的是控制台输出，当然还可以由更多的选择，根据需求切换即可
+
+<img src="images/image-20220328164732364.png" alt="image-20220328164732364" style="zoom:80%;" />
+
+**步骤③**：使用MP的标准通用接口BaseMapper加速开发，别忘了==@Mapper和泛型的指定==
+
+```java
+@Mapper
+public interface BookMapper extends BaseMapper<Book> {
+}
+```
+
+MP默认进行了ResultMap的转换哦，"小驼峰——user_name"
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.CCooky.mapper.BookMapper">
+
+
+</mapper>
+```
+
 
 
 # 3. 通用CRUD
@@ -749,3 +818,216 @@ IPage<T> selectPage(IPage<T> page, @Param(Constants.WRAPPER) Wrapper<T> queryWra
 点进去看一下Ipage类，他有一个实现类为Page，我们就用这个，点击进去会有set方法，设置当前页和每页条数。
 
 ![image-20220325155033976](images/image-20220325155033976.png)
+
+
+
+
+
+```java
+@Test
+public void testGetByPage(){
+    IPage page = new Page(1,5);
+    bookMapper.selectPage(page,null);
+}
+```
+
+运行结果：
+
+<img src="images/image-20220328170257017.png" alt="image-20220328170257017" style="zoom:80%;" />
+
+哟，怎么回事呢？其实MybatisPlus做分页查询，也就是在我们正常的Select语句后面加上`Limit ?, ?`，对吧，看似很简单但Mybatis没有默认给我们开启这个功能。因为第一点，你不一定会用到这个往SQL语句后面添加的操作，第二点还有很多其他的可以SQL语句添加的功能，所以让开发者自己来使用。
+
+实现过程，是通过MybatisPlus的拦截器实现的（可以理解成先是生成正常的语句，然后他给拦截下来强制加上一些东西再给数据库）。这个就不能通过yml配置文件了，需要我们新建一个配置类，然后把拦截器类给到Spring容器，后面MP他就会自己调用。（需要熟悉一些Spring注解写配置文件）
+
+<img src="images/image-20220328170942215.png" alt="image-20220328170942215" style="zoom:80%;" />
+
+```java
+@Configuration
+public class MPConfig {
+
+    @Bean
+    public MybatisPlusInterceptor mybatisPlusInterceptor(){
+        MybatisPlusInterceptor mybatisPlusInterceptor = new MybatisPlusInterceptor();
+      // 这里可以添加多个拦截器，需要什么加什么
+        mybatisPlusInterceptor.addInnerInterceptor(new PaginationInnerInterceptor());
+        return mybatisPlusInterceptor;
+    }
+}
+```
+
+**那我们加了@Configuration，SpringBoot的主配置类会识别到吗？会的，之前讲过这个引导类会自动识别当前包及其子包下所有的注解。**
+
+然后我们再直接测试前面的代码：GOOD
+
+<img src="images/image-20220328171209997.png" alt="image-20220328171209997" style="zoom:80%;" />
+
+
+
+**第二步：拿到我们的分页查询到的数据。**
+
+<img src="images/image-20220328171628652.png" alt="image-20220328171628652" style="zoom:80%;" />
+
+方法执行结果返回的还是一个Ipage对象，其实最后的结果全部封装给了我们传入的这个Ipage对象！！！真的不错，太方便了。我们通过Getter方法拿到里面的值。
+
+```java
+@Test
+public void testGetByPage(){
+    IPage page = new Page(1,5);
+    bookMapper.selectPage(page,null);
+    System.out.println(page.getCurrent()); //当前页码值
+    System.out.println(page.getSize());    //每页显示数
+    System.out.println(page.getTotal());   //数据总量
+    System.out.println(page.getPages());   //总页数
+    System.out.println(page.getRecords()); //详细数据
+}
+```
+
+## 3.5 条件查询
+
+这里的核心对象就是之前我们遇见的**Wrapper**，在很多方法里面都有例如SelectList、selectPage、update、delete（可以在BaseMapper里面看到），我们点进去看一下这个**Wrapper类**，Crtl+H查看一下他的父类和实现类：
+
+<img src="images/image-20220328174338007.png" alt="image-20220328174338007" style="zoom:80%;" />
+
+标红的两个实现类就是我们用的最多最多的，**一个QueryWrapper、一个LambdaQueryWrapper**。他的专业名称叫做 实体对象封装操作类，通过调用里面的方法组后在SQL语句中生成Where条件！
+
+我们来看一下这两个实现类的使用方式：	高级程序员都使用第二种嘿嘿
+
+### **QueryWrapper**
+
+Wrapper里面有很多方法，like就是用来模糊查询的等等......
+
+```java
+@Test
+public void testGetBy(){
+    String bookName = "Spring";
+    QueryWrapper<Book> qw = new QueryWrapper();
+    if (Strings.isNotEmpty(bookName)){
+        qw.like("name",bookName);// 第一个参数是column——表的列名
+ 
+    }
+    bookMapper.selectList(qw);
+}
+```
+
+运行结果：
+
+<img src="images/image-20220328175309781.png" alt="image-20220328175309781" style="zoom:80%;" />
+
+<font color="#f0f"><b>温馨提示</b></font>
+
+​		假如不加 非null验证，最后加载where的条件会变成  `%null%` ，那就GG洛
+
+### **LambdaQueryWrapper**
+
+大司马见了，直呼内行内行！！！！Lambda表达式写法，就不可能出现写错`column`的情况
+
+```java
+@Test
+public void testGetBy2(){
+    String bookName = "String";
+    LambdaQueryWrapper<Book> lqw = new LambdaQueryWrapper<>();
+  // 第一个是codition——判断语句，是true的话，这行代码就会真正执行，否则失效
+  // 第二个还是column——表的列名，只不过是通过我们的实体类来确定的！！细细细
+    lqw.like(Strings.isNotEmpty(bookName), Book::getName, bookName);
+  
+    bookMapper.selectList(lqw);
+}
+```
+
+# 4. **SQL注入的原理**
+
+前面我们已经知道，MP在启动后会将BaseMapper中的一系列的方法注册到meppedStatements中，那么究竟是如何注入的呢？流程又是怎么样的？下面我们将一起来分析下。
+
+在MP中，ISqlInjector负责SQL的注入工作，它是一个接口，AbstractSqlInjector是它的实现类，实现关系如下：
+
+![image-20220520212052384](images/image-20220520212052384.png)
+
+在AbstractSqlInjector中，主要是由inspectInject()方法进行注入的，如下：
+
+```java
+ @Override
+    public void inspectInject(MapperBuilderAssistant builderAssistant, Class<?> mapperClass) {
+        Class<?> modelClass = extractModelClass(mapperClass);
+        if (modelClass != null) {
+            String className = mapperClass.toString();
+            Set<String> mapperRegistryCache = GlobalConfigUtils.getMapperRegistryCache(builderAssistant.getConfiguration());
+            if (!mapperRegistryCache.contains(className)) {
+                List<AbstractMethod> methodList = this.getMethodList(mapperClass);
+                if (CollectionUtils.isNotEmpty(methodList)) {
+                    TableInfo tableInfo = TableInfoHelper.initTableInfo(builderAssistant, modelClass);
+                    // 循环注入自定义方法
+                    methodList.forEach(m -> m.inject(builderAssistant, mapperClass, modelClass, tableInfo));
+                } else {
+                    logger.debug(mapperClass.toString() + ", No effective injection method was found.");
+                }
+                mapperRegistryCache.add(className);
+            }
+        }
+    }
+```
+
+在实现方法中， `methodList.forEach(m -> m.inject(builderAssistant, mapperClass, modelClass, tableInfo));` 是关键，循环遍历方法，进行注入。
+
+最终调用抽象方法injectMappedStatement进行真正的注入：
+
+<img src="images/image-20220520212851365.png" alt="image-20220520212851365"  />
+
+查看该方法的实现：
+
+<img src="images/image-20220520212934626.png" alt="image-20220520212934626" style="zoom:80%;" />
+
+以SelectById为例查看：
+
+```java
+public class SelectById extends AbstractMethod {
+
+    @Override
+    public MappedStatement injectMappedStatement(Class<?> mapperClass, Class<?> modelClass, TableInfo tableInfo) {
+        SqlMethod sqlMethod = SqlMethod.SELECT_BY_ID;
+        SqlSource sqlSource = new RawSqlSource(configuration, String.format(sqlMethod.getSql(),
+            sqlSelectColumns(tableInfo, false),
+            tableInfo.getTableName(), tableInfo.getKeyColumn(), tableInfo.getKeyProperty(),
+            tableInfo.getLogicDeleteSql(true, true)), Object.class);
+        return this.addSelectMappedStatementForTable(mapperClass, getMethod(sqlMethod), sqlSource, tableInfo);
+    }
+}
+```
+
+可以看到，生成了SqlSource对象，再将SQL通过addSelectMappedStatement方法添加到meppedStatements中。
+
+![image-20220520213102681](images/image-20220520213102681.png)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
