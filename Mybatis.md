@@ -1,20 +1,114 @@
+# **通用配置**
+
+```properties
+# jdbc.properties
+jdbc.driver=com.mysql.jdbc.Driver
+jdbc.url = jdbc:mysql://localhost:3306/studysql?useSSL=false
+jdbc.username = root
+jdbc.password= 5240zhouquan
+```
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+<!--    加载外部数据源配置-->
+    <properties resource="jdbc.properties"></properties>
+<!--		给实体类全限定名起别名-->
+    <typeAliases>
+        <package name="com.CCooky.pojo"/>
+    </typeAliases>
+<!--		配置数据库连接环境信息-->
+    <environments default="development">
+        <environment id="development">
+            <transactionManager type="JDBC"/>
+            <dataSource type="POOLED">
+                <!--	数据库连接信息1-->
+                <property name="driver" value="${jdbc.driver}"/>
+                <property name="url" value="${jdbc.url}"/>
+                <property name="username" value="${jdbc.username}"/>
+                <property name="password" value="${jdbc.password}"/>
+            </dataSource>
+        </environment>
+        <environment id="test">
+            <transactionManager type="JDBC"/>
+            <dataSource type="POOLED">
+                <!--	数据库连接信息2-->
+                <property name="driver" value="com.mysql.jdbc.Driver"/>
+                <property name="url" value="jdbc:mysql:///mybatis?useSSL=false"/>
+                <property name="username" value="root"/>
+                <property name="password" value="1234"/>
+            </dataSource>
+        </environment>
+    </environments>
+<!--		加载SQL的映射文件，包扫描器。扫描的是resources目录下面的-->
+    <mappers>
+        <package name="com.CCooky.mapper"/>
+    </mappers>
+</configuration>
+```
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="test">
+  
+    <resultMap id="brandResultMap" type="brand">
+        <result column="brand_name" property="brandName"/>
+        <result column="company_name" property="companyName"/>
+    </resultMap>
+
+    <select id="selectAll" resultType="Blog">
+        select * from tb_user;
+    </select>
+
+</mapper>
+```
+
+```java
+public static void main(String[] args) throws IOException {
+
+    //1.加载mybatis的核心配置文件，获取SqlSessionFactory
+    String resource = "mybatis-config.xml";
+    InputStream inputStream = Resources.getResourceAsStream(resource);
+    SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+
+    //2. 获取SqlSession，用它来执行sql语句
+    SqlSession sqlSession = sqlSessionFactory.openSession();
+
+    //3. 执行SQL。
+					//1. 获取接口代理对象
+			UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
+					//2. 执行方法，其实就是执行SQL语句，
+			List<User> users = userMapper.selectAll();
+    
+    //4. 释放资源
+    sqlSession.close();
+
+}
+```
+
 # MyBatis
 
 ## 1. 概述
 
 <img src="images/image-20220129152710194.png" alt="image-20220129152710194" style="zoom: 80%;" />
 
-这里提出一个概念：**持久层**
+==**这里提出一个概念：持久层，负责处理数据库之间的连接。**==
 
-负责处理数据库之间的连接。
-
-**JDBC的缺点**
+-  mybatis 是一个优秀的基于java的持久层框架，它内部封装了jdbc，使开发者只需要关注sql语句本身，而不需要花费精力去处理加载驱动、创建连接、创建statement等繁杂的过程。
+-  mybatis通过xml或注解的方式将要执行的各种 statement配置起来，并通过java对象和statement中sql的动态参数进行映射生成最终执行的sql语句。
+-  最后mybatis框架执行sql并将结果映射为java对象并返回。采用ORM思想（ObjectRelationMapping）解决了实体对象和数据库表映射的问题，对jdbc 进行了封装，屏蔽了jdbc api 底层访问细节，使我们不用与jdbc api打交道，就可以完成对数据库的持久化操作。
 
 <img src="images/image-20220129153501890.png" alt="image-20220129153501890" style="zoom:80%;" />
 
-**Mybatis的简化**
-
-<img src="images/image-20220129153550646.png" alt="image-20220129153550646" style="zoom:80%;" />
+<img src="images/image-20220129153550646.png" alt="image-20220129153550646"  />
 
 **其他的框架：**
 
@@ -38,8 +132,6 @@ create table tb_user(
 	gender char(1),
 	addr varchar(30)
 );
-
-
 
 INSERT INTO tb_user VALUES (1, 'zhangsan', '123', '男', '北京');
 INSERT INTO tb_user VALUES (2, '李四', '234', '女', '天津');
@@ -105,16 +197,8 @@ INSERT INTO tb_user VALUES (3, '王五', '11', '男', '西安');
             <pattern>[%level] %blue(%d{HH:mm:ss.SSS}) %cyan([%thread]) %boldGreen(%logger{15}) - %msg %n</pattern>
         </encoder>
     </appender>
-
-    <logger name="com.itheima" level="DEBUG" additivity="false">
-        <appender-ref ref="Console"/>
-    </logger>
-
-
     <!--
-
-      level:用来设置打印级别，大小写无关：TRACE, DEBUG, INFO, WARN, ERROR, ALL 和 OFF
-     ， 默认debug
+      level:用来设置打印级别，大小写无关：TRACE, DEBUG, INFO, WARN, ERROR, ALL 和 OFF。 默认debug
       <root>可以包含零个或多个<appender-ref>元素，标识这个输出位置将会被本日志级别控制。
       -->
     <root level="DEBUG">
@@ -127,19 +211,17 @@ INSERT INTO tb_user VALUES (3, '王五', '11', '男', '西安');
 
 在main--resources目录下创建==mybatis-config.xml==文件，内容去官网下面复制那个简单的案例
 
-<img src="images/image-20220129155814160.png" alt="image-20220129155814160" style="zoom:67%;" />
+<img src="images/image-20220129155814160.png" alt="image-20220129155814160" style="zoom: 50%;" />
 
 <img src="images/image-20220129160012745.png" alt="image-20220129160012745" style="zoom:80%;" />
 
-**第五步：编写SQL映射文件，**===》》统一管理sql语句，解决硬编码问题
-
-也是去官网找到，在上一步的mybatis-config里面提到过。
+**第五步：编写SQL映射文件，**===》》统一管理sql语句，解决硬编码问题。也是去官网找到，在上一步的mybatis-config里面提到过。
 
 ==文件命名规范：数据库表名+Mapper.xml==	例如UserMapper.xml
 
-<img src="images/image-20220129160435401.png" alt="image-20220129160435401" style="zoom:67%;" />
+<img src="images/image-20220129160435401.png" alt="image-20220129160435401" style="zoom: 50%;" />
 
-<img src="images/image-20220129160540359.png" alt="image-20220129160540359" style="zoom:80%;" />
+<img src="images/image-20220129160540359.png" alt="image-20220129160540359" style="zoom: 67%;" />
 
 然后我们对映射文件进行修改，
 
@@ -156,7 +238,7 @@ INSERT INTO tb_user VALUES (3, '王五', '11', '男', '西安');
     <!--
         select -SQL语句类型
         id -该语句的唯一标示
-        resultType - 该SQL语句的返回值类型，
+        resultType - 该SQL语句结果对应的实体类必须为全限定名，
     -->
     <select id="selectAll" resultType="Blog">
         select * from tb_user;
@@ -177,11 +259,13 @@ com.CCooky.pojo.User
 <select id="selectAll" resultType="com.CCooky.pojo.User">
 ```
 
-最后，将前面mybatis的核心配置文件中的映射文件的路径改了，这样我们的配置就全部完成了。可以开始后面的编写实体类属性等操作。
+最后，将前面mybatis核心配置文件中的SQL映射文件的路径改了，这样我们的配置就全部完成了。可以开始后面的编写实体类属性等操作。
 
 <img src="images/image-20220129161919935.png" alt="image-20220129161919935" style="zoom:67%;" />
 
-**第六步：编码开始**
+<img src="images/image-20220313110859767.png" alt="image-20220313110859767" style="zoom: 80%;" />
+
+**第六步：编码，测试**
 
 先把实体类完善。
 
@@ -196,13 +280,13 @@ public class User {
 }
 ```
 
-然后写我们的运行测试类。好好看写的注释哦
+**然后写我们的运行测试类。好好看写的注释哦**
 
 <img src="images/image-20220129164418268.png" alt="image-20220129164418268" style="zoom:67%;" />
 
-![image-20220218163512745](images/image-20220218163512745.png)
+<img src="images/image-20220218163512745.png" alt="image-20220218163512745" style="zoom:50%;" />
 
-这里先要构建我们Mybatis的sqlSessionFactory对象。
+**要使用mybatis，这里先要构建我们Mybatis的sqlSessionFactory工厂对象。这是mybatis的核心对象**
 
 ```java
 public static void main(String[] args) throws IOException {
@@ -218,7 +302,7 @@ public static void main(String[] args) throws IOException {
 
         //3. 执行SQL。
         // 这里不同的SQL需求，对应使用不同的方法。
-        // 参数部分传入你要执行的失去了，采用 “Mapper的名称空间+sql语句的id” 来定位
+        // 参数部分传入你要执行的sql语句，采用 “Mapper的名称空间+sql语句的id” 来定位
         List<User> users = sqlSession.selectList("test.selectAll");
         System.out.println(users);
 
@@ -227,7 +311,54 @@ public static void main(String[] args) throws IOException {
 }
 ```
 
-### SqlSessionFactory工具类抽取
+#### **SqlSessionFactoryBuilder**
+
+**工厂构建器对象**，通过加载mybatis的核心文件的输入流的形式构建一个SqlSessionFactory对象。
+
+```java
+String resource = "mybatis-config.xml";
+InputStream inputStream = Resources.getResourceAsStream(resource);
+SqlSessionFactory sqlSessionFactory = new 	SqlSessionFactoryBuilder().build(inputStream);
+```
+
+#### **SqlSessionFactory**
+
+**工厂对象**，通过它来创建我们的会话对象SqlSession。并且有多个方法创建 SqlSession 。
+
+<img src="images/image-20220313153930512.png" alt="image-20220313153930512" style="zoom:80%;" />
+
+####  **SqlSession**
+
+**会话对象**，SqlSession 实例在 MyBatis 中是非常强大的一个类。在这里你会看到所有执行语句、提交或回滚事务和获取映射器实例的方法。
+
+执行语句的方法主要有：（后面代理开发，这个连接即可）
+
+```java
+<T> T selectOne(String statement, Object parameter) 
+<E> List<E> selectList(String statement, Object parameter) 
+int insert(String statement, Object parameter) 
+int update(String statement, Object parameter) 
+int delete(String statement, Object parameter)
+```
+
+**操作事务的方法主要有：**
+
+```java
+void commit()	//用的多一点
+void rollback()
+```
+
+
+
+
+
+
+
+
+
+
+
+#### SqlSessionFactory工具类抽取
 
 从我们的Mybatis的实现可以知道，每次使用的时候都需要写那三行代码来创建我们的工厂对象，这个对象是执行sql的核心，创建同时也会建立线程池等。以后我们在写后端资源的时候，以Servlet为例，每写一个资源都需要加上这三行代码，这就一引起代码重复问题，二是创建很多的工厂对象和线程池，极大占用后台资源，所以这个SqlSessionFactory工厂对象，我们希望只创建一次！！！
 
@@ -261,27 +392,25 @@ public class SqlSessionFactoryUtils {
 }
 ```
 
-
-
-### SQL映射文件警告提示
+#### SQL映射文件警告提示
 
 <img src="images/image-20220129165128778.png" alt="image-20220129165128778" style="zoom:80%;" />
 
-### IDEA写SQL语句无代码提示
+#### IDEA写SQL语句无代码提示
 
 IDEA连接MySQL数据库，没有代码提示的设置：
 
-setting里面搜索SQl dialects，然后设置成为MySQL就行
+setting里面搜索SQl dialects，然后设置成为MySQL就行。
 
-![image-20220129212009007](images/image-20220129212009007.png)
+<img src="images/image-20220129212009007.png" alt="image-20220129212009007" style="zoom:80%;" />
 
 第二步，在IDEA里面连接上你的项目数据库就行，over
 
 <img src="images/image-20220217201934790.png" alt="image-20220217201934790" style="zoom:80%;" />
 
-<img src="images/image-20220217202108578.png" alt="image-20220217202108578" style="zoom:80%;" />
+<img src="images/image-20220217202108578.png" alt="image-20220217202108578" style="zoom: 67%;" />
 
-### 增删改一定要提交事务
+#### 增删改一定要提交事务
 
 ```java
 sqlSession.commit();
@@ -289,7 +418,7 @@ sqlSession.commit();
 
 ## 3. Mapper代理开发
 
-### 概述
+#### 概述
 
 上面快速入门开发里面，还是存在硬编码问题，例如UserMapper里面的namespace、id，每次想要执行语句还要去Mapper里面找一下，名字啊什么的，不方便。
 
@@ -300,8 +429,7 @@ sqlSession.commit();
 原来是这样：
 
 ```java
- 
-List<User> users = sqlSession.selectList("test.selectAll");
+ List<User> users = sqlSession.selectList("test.selectAll");
 ```
 
 现在可以这样：
@@ -313,7 +441,7 @@ UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
 List<User> users = userMapper.selectAll();
 ```
 
-### 实现方式
+#### 实现方式
 
 必须的规则哦，按照一模一样的要求才行
 
@@ -332,7 +460,7 @@ List<User> users = userMapper.selectAll();
 >    1. 通过sqlSession的getMapper方法获取Mapper接口对象；
 >    2. 直接调用对象里面的方法完成sql的执行
 
-**第一步**
+**第一步：建立相同的目录结构**
 
 这里有一个问题，因为我们的所有文件是放在resources下面的，代码文件在java目录下面，肯定不能直接放在一起啊，那不就项目结构乱套了。
 
@@ -354,9 +482,7 @@ List<User> users = userMapper.selectAll();
 
 <img src="images/image-20220129175317147.png" alt="image-20220129175317147" style="zoom:67%;" />
 
-**最后的最后**
-
-我们前面那个mybatis-config.xml中加载映射文件，每次要写全限定名，是不是很麻烦啊，以后可能有几十个需要加载，那不完蛋了。所以说Mybatis给我们想好了。
+我们这个mybatis-config.xml中加载SQl映射文件，每次要写全限定名，是不是很麻烦啊，以后可能有几十个需要加载，那不完蛋了。所以说Mybatis给我们想好了。
 
 只要我们使用的是代理开发模式，我们就可以采用Mapper代理的方式加载，原理是包扫描的方式加载SQL映射文件。它会自动加载这个包下面的所有SQL映射文件（注意，编译后，我们所有Mapper.xml都放在了包下面哦，细品，真的牛）
 
@@ -366,17 +492,15 @@ List<User> users = userMapper.selectAll();
     </mappers>
 ```
 
-**第二步：xml文件配置代理接口**
+**第二步：映射文件设置对应的代理接口**
 
-每一个Mapper.xml都要设置对应的代理开发的接口
-
-设置SQL映射文件的namespace为代理Mapper接口==全限定名==。
+每一个SQL映射文件Mapper.xml都要设置对应的代理开发的接口；namespace为代理接口==全限定名==。
 
 <img src="images/image-20220129174235449.png" alt="image-20220129174235449" style="zoom:80%;" />
 
 智能提示，牛的哇，Maven很细节，首先他的目录结构给你创建好了，java下放源代码，resources下方配置文件。然后只有java下面可以创建包，resources只能创建目录，这样所有的包不都在java下面了吗，所以写全限定名的时候，只要写这个 ‘’com.CCooky.mapper.UserMapper‘’ 就行了，前面的main包、java包都不用写，他会自动取java下面查找，Maven都给你整清楚了。
 
-**第三步：编写代理接口**
+**第三步：编写代理接口方法**
 
 ```java
 public interface UserMapper {
@@ -426,29 +550,13 @@ public interface UserMapper {
     }
 ```
 
-**最后的最后**
-
-我们前面那个mybatis-config.xml中加载映射文件，每次要写全限定名，是不是很麻烦啊，以后可能有几十个需要加载，那不完蛋了。所以说Mybatis给我们想好了。
-
-只要我们使用的是代理开发模式，我们就可以采用Mapper代理的方式加载，原理是包扫描的方式加载SQL映射文件。它会自动加载这个包下面的所有SQL映射文件（注意，编译后，我们所有Mapper.xml都放在了包下面哦，细品，真的牛）
-
-```java
-    <mappers>
-        <!--加载SQL的映射文件-->
-        <mapper resource="com/CCooky/mapper/UserMapper.xml"/>
-    </mappers>
- // 优化后哈哈哈哈哈
-      
-    <!--加载SQL的映射文件-->
-        <package name="com.CCooky.mapper"/>
-    </mappers>
-```
-
 ## 4. Mybatis核心配置文件
 
-在Mybatis的官网里面，有详细的配置信息。这里先只涉及到了三个内容，以后涉及到了以后再补充。详细的解析取官网，我已经写了在代码注释部分。
+在Mybatis的官网里面，有详细的配置信息。这里先只涉及到了三个内容，以后涉及到了以后再补充。详细的解析取官网，我已经写了在代码注释部分。==注意：一定要按照别人写的这个标签顺序来写配置文件，因为这是别人的约束嘛，xml的约束方式之一。==
 
-- **将具体执行的SQL语句打印到控制台**
+<img src="images/image-20220129201427906.png" alt="image-20220129201427906" style="zoom: 80%;" />
+
+- **将具体执行的SQL语句打印到控制台的配置**
 
   ```xml
   	<settings>
@@ -456,11 +564,211 @@ public interface UserMapper {
     </settings>
   ```
 
-<img src="images/image-20220129201427906.png" alt="image-20220129201427906" style="zoom: 80%;" />
+### **1. environments标签**
 
-==注意：一定要按照别人写的这个标签顺序来写配置文件，因为这是别人的约束嘛，xml的约束方式之一。==
+数据库环境的配置，支持多环境配置
 
-- **通用配置**
+<img src="images/image-20220313112449485.png" alt="image-20220313112449485" style="zoom:80%;" />
+
+其中，事务管理器（transactionManager）类型有两种：
+
+-  JDBC：这个配置就是直接使用了JDBC 的提交和回滚设置，它依赖于从数据源得到的连接来管理事务作用域。
+-  MANAGED：这个配置几乎没做什么。它从来不提交或回滚一个连接，而是让容器来管理事务的整个生命周期（比如JEE 应用服务器的上下文）。 默认情况下它会关闭连接，然而一些容器并不希望这样，因此需要将 closeConnection 属性设置为 false 来阻止它默认的关闭行为。
+
+其中，数据源（dataSource）类型有三种：
+
+-  UNPOOLED：这个数据源实现的只是每次被请求时打开和关闭连接。
+-  POOLED：这种数据源的实现利用“ 连接池 ”的概念将 JDBC 连接对象组织起来。
+-  JNDI：这个数据源的实现是为了能在如 EJB 或应用服务器这类容器中使用，容器可以集中或在外部配置数据源，然后放置一个 JNDI 上下文的引用。
+
+### **2. mapper标签**
+
+用来加载SQL映射文件。
+
+```xml
+<mappers>
+    <!--加载SQL的映射文件，包扫描器-->
+  扫描的是resources目录下面的
+    <package name="com.CCooky.mapper"/>
+</mappers>
+```
+
+### **3. Properties标签**
+
+该标签可以加载额外配置的properties文件。例如，实际开发中，习惯将数据源的配置信息单独抽取成一个properties文件，然后用properties标签引入，通过 ${ } 表达式拿取里面的数据。
+
+![image-20220313151603277](images/image-20220313151603277.png)
+
+### **4. typeAliases标签**
+
+1. 针对SQL语句里面的resultType而言，可以简写数据库映射的java对象名称。
+2. 类型别名可为 Java 类型设置一个缩写名字,仅用于XML配置,意在降低冗余的全限定类名书写。
+3. 在没有注解的情况下，会使用 **Bean 的首字母小写的非限定类名**来作为它的别名。
+
+```xml
+<!--扫描的是java目录下面的，包扫描器。-->
+<typeAliases>
+    <package name="com.CCooky.pojo"/>
+</typeAliases>
+```
+
+<img src="images/image-20220313152745645.png" alt="image-20220313152745645" style="zoom: 80%;" />
+
+<img src="images/image-20220313152803878.png" alt="image-20220313152803878" style="zoom: 80%;" />
+
+除此以外，Mybatis已经为我们配置了一些常用类型的别名。
+
+<img src="images/image-20220313153101974.png" alt="image-20220313153101974" style="zoom:80%;" />
+
+###  5. **typeHandlers标签**
+
+简单说，就是数据库的数据类型与我们Java的数据类型不是一样的，我们要对其进行转换。
+
+无论是 MyBatis 在预处理语句（PreparedStatement）中设置一个参数时，还是从结果集中取出一个值时， 都会用类型处理器将数据库获取的值以合适的方式转换成 Java 类型。下表描述了一些默认的类型处理器（截取部分）。
+
+<img src="images/image-20220314085539067.png" alt="image-20220314085539067" style="zoom:80%;" />
+
+但上面提供的并不能满足我们实际开发中的所有需求。例如说，我们想把Java的Date类型，在数据库内以时间毫秒值的形式存储，取出来时转换成java的Date，即java的Date与数据库的varchar毫秒值之间转换。（mybatis默认的转换是Date——yyyy-MM-dd HH:mm:ss）。
+
+办法：你可以重写类型处理器或创建新的类型处理器来处理不支持的或非标准的类型。具体做法为：实现org.apache.ibatis.type.TypeHandler 接口或继承一个实现类org.apache.ibatis.type.BaseTypeHandler， 然后可以选择性地将它映射到一个JDBC类型。
+
+**开发步骤：**
+
+① 定义转换类继承类BaseTypeHandler<T>
+
+② 覆盖4个未实现的方法，其中`setNonNullParameter`为java程序设置数据到数据库的回调方法，`getNullableResult`为查询时 mysql的字符串类型转换成 java的Type类型的方法
+
+③ 在MyBatis核心配置文件中进行注册
+
+④ 测试转换是否正确
+
+第一步：
+
+```java
+// <T> 类型为需要转换的数据类型
+public class MyDateTypeHandler extends BaseTypeHandler<Date> {
+  	// java类型----数据库类型
+  	// 这里的i是当前参数的位置，他已经给我们直接写就行了
+		public void setNonNullParameter(PreparedStatement preparedStatement, int i, Date date, JdbcType type) {
+      	long time = date.getTime();
+				preparedStatement.setString(i, time+"");
+		}
+  	// 数据库类型----java类型
+  	// String参数：数据库要转换的字段名称
+  	// ResultSet：查询出来的结果集
+		public Date getNullableResult(ResultSet resultSet, String s) throws SQLException {
+      	// 获取结果集中需要的数据（str）转换成Date类型，返回
+				return new Date(resultSet.getString(s));
+		}
+ 	 	// 数据库类型----java类型
+  	// i参数：数据库要转换的字段位置
+		public Date getNullableResult(ResultSet resultSet, int i) throws SQLException {
+				return new Date(resultSet.getString(i));
+		}
+ 	 // 数据库类型----java类型
+  
+		public Date getNullableResult(CallableStatement callableStatement, int i) throws SQLException {
+				return callableStatement.getDate(i);
+} 
+}
+```
+
+第二步：MyBatis核心配置文件中进行注册
+
+```xml
+<!--注册类型自定义转换器--> 
+<typeHandlers> 
+  	<typeHandler 			  
+       	handler="com.itheima.typeHandlers.MyDateTypeHandler">
+  	</typeHandler>
+</typeHandlers>
+```
+
+第三步：测试
+
+<img src="images/image-20220314122111625.png" alt="image-20220314122111625" style="zoom:67%;" />
+
+###  **6. plugins标签**
+
+MyBatis可以使用第三方的插件来对功能进行扩展，**分页助手PageHelper**是将分页的复杂操作进行封装，使用简单的方式即可获得分页的相关数据。使用分页助手不用添加什么其他的代码，也不用继承实现之类的，他就像我们的IDEA里面的插件，只要配置了就会在内部直接起作用，卧槽真的舒服！！！
+
+开发步骤：
+
+① 导入通用PageHelper的坐标
+
+② 在mybatis核心配置文件中配置PageHelper插件
+
+③ 测试分页数据获取
+
+第一步：pom.xml
+
+```xml
+<dependency>
+    <groupId>com.github.pagehelper</groupId>
+    <artifactId>pagehelper</artifactId>
+    <version>3.7.5</version>
+</dependency>
+<dependency>
+    <groupId>com.github.jsqlparser</groupId>
+    <artifactId>jsqlparser</artifactId>
+    <version>0.9.1</version>
+</dependency>
+```
+
+第二步：mybatis-config.xml
+
+```xml
+<!--配置分页助手插件-->
+<plugins>
+    <plugin interceptor="com.github.pagehelper.PageHelper">
+      	<!-- 指定方言 -->
+        <property name="dialect" value="mysql"></property>
+    </plugin>
+</plugins>
+```
+
+第三步：直接使用，666666
+
+```java
+@Test
+public void test3() throws IOException {
+    InputStream resourceAsStream = Resources.getResourceAsStream("sqlMapConfig.xml");
+    SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(resourceAsStream);
+    SqlSession sqlSession = sqlSessionFactory.openSession();
+    UserMapper mapper = sqlSession.getMapper(UserMapper.class);
+
+    //设置分页相关参数   当前页+每页显示的条数
+    PageHelper.startPage(1,3);
+
+    List<User> userList = mapper.findAll();
+    for (User user : userList) {
+        System.out.println(user);
+    }
+
+    //获得与分页相关参数
+    PageInfo<User> pageInfo = new PageInfo<User>(userList);
+    System.out.println("当前页："+pageInfo.getPageNum());
+    System.out.println("每页显示条数："+pageInfo.getPageSize());
+    System.out.println("总条数："+pageInfo.getTotal());
+    System.out.println("总页数："+pageInfo.getPages());
+    System.out.println("上一页："+pageInfo.getPrePage());
+    System.out.println("下一页："+pageInfo.getNextPage());
+    System.out.println("是否是第一个："+pageInfo.isIsFirstPage());
+    System.out.println("是否是最后一个："+pageInfo.isIsLastPage());
+
+    sqlSession.close();
+}
+```
+
+#### **通用配置**
+
+```properties
+# jdbc.properties
+jdbc.driver=com.mysql.jdbc.Driver
+jdbc.url = jdbc:mysql://localhost:3306/studysql?useSSL=false
+jdbc.username = root
+jdbc.password= 5240zhouquan
+```
 
 ```xml
 <?xml version="1.0" encoding="UTF-8" ?>
@@ -469,35 +777,31 @@ public interface UserMapper {
         "http://mybatis.org/dtd/mybatis-3-config.dtd">
 
 <configuration>
-    <!--
-    针对SQL映射文件里面的resultType而言，可以简写返回值类型
-    类型别名可为 Java 类型设置一个缩写名字,仅用于XML配置,意在降低冗余的全限定类名书写
-    在没有注解的情况下，会使用 Bean 的首字母小写的非限定类名来作为它的别名。
--->
-		扫描的是java目录下面的，这样就不用写全限定名
+  <!--    加载外部数据源配置-->
+    <properties resource="jdbc.properties"></properties>
+    <!--给实体类全限定名起别名-->
     <typeAliases>
         <package name="com.CCooky.pojo"/>
     </typeAliases>
 
     <!--
-        environments：配置数据库连接环境信息。
-        可以配置多个environment，通过default属性切换不同的environment
+				配置数据库连接环境信息。
     -->
     <environments default="development">
         <environment id="development">
             <transactionManager type="JDBC"/>
             <dataSource type="POOLED">
-                <!--数据库连接信息-->
-                <property name="driver" value="com.mysql.jdbc.Driver"/>
-                <property name="url" value="jdbc:mysql://127.0.0.1:3306/studysql?useSSL=false"/>
-                <property name="username" value="root"/>
-                <property name="password" value="5240zhouquan"/>
+                <!--数据库连接信息1-->
+                <property name="driver" value="${jdbc.driver}"/>
+                <property name="url" value="${jdbc.url}"/>
+                <property name="username" value="${jdbc.username}"/>
+                <property name="password" value="${jdbc.password}"/>
             </dataSource>
         </environment>
         <environment id="test">
             <transactionManager type="JDBC"/>
             <dataSource type="POOLED">
-                <!--数据库连接信息-->
+                <!--数据库连接信息2-->
                 <property name="driver" value="com.mysql.jdbc.Driver"/>
                 <property name="url" value="jdbc:mysql:///mybatis?useSSL=false"/>
                 <property name="username" value="root"/>
@@ -706,7 +1010,7 @@ boolean updateByIds(@Param("ids") String[] ids, @Param("bridgeAlertRecord") Brid
             map.put("arg0",数组);
             map.put("array",数组);
         6. 其他类型：直接使用，例如单个的int参数
-       
+      
 ```
 
 * POJO 类型
@@ -753,7 +1057,7 @@ boolean updateByIds(@Param("ids") String[] ids, @Param("bridgeAlertRecord") Brid
 
   比如int类型，`参数占位符名称` 叫什么都可以。尽量做到见名知意
 
-## 6. 注意事项
+## 6. 技巧篇
 
 ### 6.1 查询时间段
 
@@ -775,7 +1079,200 @@ update goods_msg SET update_date = DATE_FORMAT(NOW(),'%Y-%m-%d %H:%i:%s') WHERE 
 -- 对应时间格式2022-2-20 12:30:30
 ```
 
+## 7. Mybatis多表查询
 
+之前学习数据库的时候，已经学习过了多表查询的分类，以及sql语句的写法。
+
+**表的关系：**
+
+- 一对多；多对多；一对一
+
+**多表查询分类：**
+
+- 内连接；外连接；子查询
+
+这里学习的主要是，我们通过多表查询得到了复杂的数据列，（可能既有用户的信息，也有订单的信息，但在java里面这部分对应的是两个POJO），在mybatis里面如何去封装这些复杂的数据列。
+
+#### 一对一查询
+
+用户表和订单表的关系为，一个用户有多个订单，一个订单只从属于一个用户。（对于订单而言：他是一对一的关系，而对于用户而言是一对多关系哦）
+
+一对一查询的需求：查询一个订单，与此同时查询出该订单所属的用户。
+
+<img src="images/image-20220314154332603.png" alt="image-20220314154332603" style="zoom:80%;" />
+
+首先，我们的完整sql语句：我们给字段起了别名，为了区分两个不同的id。
+
+`SELECT *,orders.id as oid FROM orders ,user  WHERE orders.uid=user.id；`
+
+查询的结果如下：
+
+![image-20220314162724724](images/image-20220314162724724.png)
+
+**Java里面的实现：**
+
+首先，我们user类和order类属性。然后核心就在这里，我们在Order实体里面，添加一个User类的属性。相应的添加getter、setter、toString等方法。
+
+<img src="images/image-20220314163128525.png" alt="image-20220314163128525" style="zoom: 67%;" />
+
+然后以代理开发方式。写好了mapper语句后，首先解决的是：查询到的数据表字段与java实体类之间的映射。对于user如何进行映射呢，就是用user.id这种，如下：
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itheima.mapper.OrderMapper">
+
+    <resultMap id="orderMap" type="order">
+        <id column="oid" property="id"></id>
+        <result column="ordertime" property="ordertime"></result>
+        <result column="total" property="total"></result>
+        <result column="uid" property="user.id"></result>
+      	// 映射到user属性
+        <result column="username" property="user.username"></result>
+        <result column="password" property="user.password"></result>
+        <result column="birthday" property="user.birthday"></result>
+    </resultMap>
+
+    <select id="findAll" resultMap="orderMap">
+         SELECT *,orders.id as oid FROM orders ,user  WHERE orders.uid=user.id
+    </select>
+</mapper>
+```
+
+对于映射到user属性，还有另外一种写法如下：**< /association>标签**
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itheima.mapper.OrderMapper">
+
+    <resultMap id="orderMap" type="order">
+        <id column="oid" property="id"></id>
+        <result column="ordertime" property="ordertime"></result>
+        <result column="total" property="total"></result>
+        <result column="uid" property="user.id"></result>
+      	// 映射到user属性
+        <!--
+            property: 当前实体(order)中的属性名称(private User user)
+            javaType: 当前实体(order)中的属性的类型(User)(全限定名)
+        -->
+        <association property="user" javaType="user">
+            <id column="uid" property="id"></id>
+            <result column="username" property="username"></result>
+            <result column="password" property="password"></result>
+            <result column="birthday" property="birthday"></result>
+        </association>
+    </resultMap>
+
+    <select id="findAll" resultMap="orderMap">
+         SELECT *,orders.id as oid FROM orders ,user  WHERE orders.uid=user.id
+    </select>
+</mapper>
+```
+
+#### **一对多查询**
+
+用户表和订单表的关系为，一个用户有多个订单，一个订单只从属于一个用户
+
+一对多查询的需求：查询一个用户，与此同时查询出该用户具有的订单
+
+<img src="images/image-20220314163602494.png" alt="image-20220314163602494" style="zoom: 80%;" />
+
+对应的sql语句：`select *,o.id oid from user u left join orders o on u.id=o.uid;`
+
+查询的结果如下：
+
+<img src="images/image-20220314164103914.png" alt="image-20220314164103914" style="zoom:67%;" />
+
+**Java里面的实现：**
+
+在前面的基础上修改User实体：
+
+<img src="images/image-20220314164203266.png" alt="image-20220314164203266" style="zoom:80%;" />
+
+然后以代理开发方式。写好了mapper语句后，首先解决的是：查询到的数据表字段与java实体类之间的映射。 **< collection>标签**
+
+```xml
+<mapper namespace="com.itheima.mapper.UserMapper">
+
+    <resultMap id="userMap" type="user">
+        <id column="uid" property="id"></id>
+        <result column="username" property="username"></result>
+        <result column="password" property="password"></result>
+        <result column="birthday" property="birthday"></result>
+        <!--配置集合信息
+            property:集合名称
+            ofType：当前集合中的数据类型
+        -->
+        <collection property="orderList" ofType="order">
+            <!--封装order的数据-->
+            <id column="oid" property="id"></id>
+            <result column="ordertime" property="ordertime"></result>
+            <result column="total" property="total"></result>
+        </collection>
+    </resultMap>
+
+    <select id="findAll" resultMap="userMap">
+        SELECT *,o.id oid FROM USER u,orders o WHERE u.id=o.uid
+    </select>
+</mapper>
+```
+
+#### **多对多查询**
+
+用户表和角色表的关系为，一个用户有多个角色，一个角色被多个用户使用（这是搭建系统里面经常遇到的内容）
+
+多对多查询的需求：查询用户同时查询出该用户的所有角色 。
+
+<img src="images/image-20220314165214328.png" alt="image-20220314165214328" style="zoom:80%;" />
+
+例如：![image-20220314170839720](images/image-20220314170839720.png)
+
+对应的sql语句：
+
+```sql
+SELECT * 
+FROM user u, user_role ur,sys_role r 
+WHERE u.id=ur.userId AND ur.roleId=r.id
+```
+
+查询结果如下：
+
+<img src="images/image-20220314171156776.png" alt="image-20220314171156776" style="zoom:80%;" />
+
+**Java里面的实现：**
+
+先新建一个实体类Role。然后在User实体里面添加一个集合属性。
+
+<img src="images/image-20220314170915481.png" alt="image-20220314170915481" style="zoom:80%;" />
+
+然后以代理开发方式。写好了mapper语句后，首先解决的是：查询到的数据表字段与java实体类之间的映射。 **< collection>标签**
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itheima.mapper.UserMapper">
+  
+    <resultMap id="userRoleMap" type="user">
+        <!--user的信息-->
+        <id column="userId" property="id"></id>
+        <result column="username" property="username"></result>
+        <result column="password" property="password"></result>
+        <result column="birthday" property="birthday"></result>
+        <!--user内部的roleList信息-->
+        <collection property="roleList" ofType="role">
+            <id column="roleId" property="id"></id>
+            <result column="roleName" property="roleName"></result>
+            <result column="roleDesc" property="roleDesc"></result>
+        </collection>
+    </resultMap>
+
+    <select id="findUserAndRoleAll" resultMap="userRoleMap">
+        SELECT * FROM USER u,sys_user_role ur,sys_role r WHERE u.id=ur.userId AND ur.roleId=r.id
+    </select>
+
+</mapper>
+```
 
 
 
@@ -1021,7 +1518,6 @@ public void testSelectAll() throws IOException {
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-
 <!--
     namespace:名称空间
 -->
@@ -1036,7 +1532,7 @@ public void testSelectAll() throws IOException {
                 参数type——指明需要映射哪一个实体类全限名，这里核心配置文件设置了别名
                 根标签下面还有两个标签，分别是：
                 <id/> ：完成主键字段的映射
-                      column：表的列名
+                      column：查询结果表的列名（注意，我们在查询的时候，可以给数据库字段器别名哦，例如两个表里面都会有id，为了区分就会起别名）
                       property：实体类的属性名
                 <result/> ：完成一般字段的映射
                       column：表的列名
@@ -1055,6 +1551,20 @@ public void testSelectAll() throws IOException {
     </select>
 </mapper>
 ```
+
+```java
+/**
+     * 分页查询
+     * @param begin
+     * @param size
+     * @return
+     */
+@Select("select * from tb_brand limit #{begin} , #{size}")
+@ResultMap("brandResultMap")
+List<Brand> selectByPage(@Param("begin") int begin,@Param("size") int size);
+```
+
+
 
 ## 4. 查询详情
 
@@ -1832,7 +2342,7 @@ public void testDeleteById() throws IOException {
 
 * collection 属性：
   * mybatis会将传入的数组参数，封装为一个Map集合。
-    * 默认：array = 数组
+    * 默认键名：array = 数组
     * 使用@Param注解改变map集合的默认key的名称
 * item 属性：本次迭代获取到的元素。
 * separator 属性：集合项迭代之间的分隔符。`foreach` 标签不会错误地添加多余的分隔符。也就是最后一次迭代不会加分隔符。
@@ -1904,246 +2414,11 @@ public void testDeleteByIds() throws IOException {
 }
 ```
 
-## 11.  Mybatis参数传递
+### sql标签
 
-正如前面所看见的，我们Mapper接口与Mapper.xml（SQL映射文件）的参数关系。在映射文件中，我们不用写接收参数的代码，就是直接拿传入的参数在使用，然后Mapper接口方法的参数需要按照一定的标准才行！！！下面详细解释一下。
+**Sql 标签**中可将重复的 sql 提取出来，使用时用 **include标签** 引用即可，最终达到 sql 重用的目的。
 
-Mybatis 接口方法中可以接收的参数类型如下，如下：
-
-* 多个参数（使用较少）
-* 单个参数：单个参数又可以是如下类型
-  * POJO 类型（类似Javabean）
-  * Map 集合类型
-  * Collection 集合类型
-  * List 集合类型
-  * Array 类型
-  * 其他类型
-
-### 11.1  多个参数
-
-```java
-* 多个参数：Mybatis原理是将其封装为Map集合,可以使用@Param注解，替换Map集合中默认的arg键名
-    map.put("arg0",参数值1)
-    map.put("param1",参数值1)
-    map.put("param2",参数值2)
-    map.put("agr1",参数值2)
-    ---------------@Param("username")
-    map.put("username",参数值1)
-    map.put("param1",参数值1)
-    map.put("param2",参数值2)
-    map.put("agr1",参数值2)
-```
-如下面的代码，就是接收两个参数，而接收多个参数需要使用 `@Param` 注解，那么为什么要加该注解呢？这个问题要弄明白就必须来研究Mybatis 底层对于这些参数是如何处理的。
-
-```java
-User select(@Param("username1") String username,@Param("password1") String password);
-```
-
-```xml
-<select id="select" resultType="user">
-	select *
-    from tb_user
-    where 
-    	username=#{username1}
-    	and password=#{password1}
-</select>
-```
-
-- **下面是具体原理的解析**
-
-
-
-我们在接口方法中定义多个参数，Mybatis 会将这些参数封装成 Map 集合对象，值就是传递的参数值，而键在没有使用 `@Param` 注解时有以下命名规则：
-
-* 以 arg 开头  ：第一个参数就叫 arg0，第二个参数就叫 arg1，以此类推。如：
-
-  > map.put("arg0"，参数值1);
-  >
-  > map.put("arg1"，参数值2);
-
-* 以 param 开头 ： 第一个参数就叫 param1，第二个参数就叫 param2，依次类推。如：
-
-  > map.put("param1"，参数值1);
-  >
-  > map.put("param2"，参数值2);
-
-**代码验证：**
-
-* 在 `UserMapper` 接口中定义如下方法
-
-  ```java
-  User select(String username,String password);
-  ```
-
-* 在 `UserMapper.xml` 映射配置文件中定义SQL
-
-  ```xml
-  <select id="select" resultType="user">
-  	select *
-      from tb_user
-      where 
-      	username=#{arg0}
-      	and password=#{arg1}
-  </select>
-  ```
-
-  或者
-
-  ```xml
-  <select id="select" resultType="user">
-  	select *
-      from tb_user
-      where 
-      	username=#{param1}
-      	and password=#{param2}
-  </select>
-  ```
-
-* 运行代码结果如下
-
-  <img src="images/image-20210805230303461.png" alt="image-20210805230303461" style="zoom:80%;" />
-
-在映射配合文件的SQL语句中使用用 `arg` 开头的和 `param` 书写，代码的可读性会变的特别差，此时可以使用 `@Param` 注解。
-
-在接口方法参数上使用 `@Param` 注解，Mybatis 会将 `arg` 开头的键名替换为对应注解的属性值。
-
-**代码验证：**
-
-* 在 `UserMapper` 接口中定义如下方法，在 `username` 参数前加上 `@Param` 注解
-
-  ```java
-  User select(@Param("username") String username, String password);
-  ```
-
-  Mybatis 在封装 Map 集合时，键名就会变成如下：
-
-  > map.put("username"，参数值1);
-  >
-  > map.put("arg1"，参数值2);
-  >
-  > map.put("param1"，参数值1);
-  >
-  > map.put("param2"，参数值2);
-
-* 在 `UserMapper.xml` 映射配置文件中定义SQL
-
-  ```xml
-  <select id="select" resultType="user">
-  	select *
-      from tb_user
-      where 
-      	username=#{username}
-      	and password=#{param2}
-  </select>
-  ```
-
-* 运行程序结果没有报错。而如果将 `#{}` 中的 `username` 还是写成  `arg0` 
-
-  ```xml
-  <select id="select" resultType="user">
-  	select *
-      from tb_user
-      where 
-      	username=#{arg0}
-      	and password=#{param2}
-  </select>
-  ```
-
-* 运行程序则可以看到错误
-
-  ![image-20210805231727206](images/image-20210805231727206.png)
-
-==结论：以后接口参数是多个时，在每个参数上都使用 `@Param` 注解。这样代码的可读性更高。==
-
-##### 传递自定义对象和数组
-
-```java
-boolean updateByIds(@Param("ids") String[] ids, @Param("bridgeAlertRecord") BridgeAlertRecord bridgeAlertRecord);
-```
-
-```xml
-<update id="updateByIds">
-        update bridge_alert_record
-        set
-            is_deal = #{bridgeAlertRecord.isDeal},
-            deal_result = #{bridgeAlertRecord.dealResult},
-            deal_content = #{bridgeAlertRecord.dealContent}
-        where id in
-            <foreach collection="ids" item="id" separator="," open="(" close=")">
-                #{id}
-            </foreach>
-</update>
-```
-
-
-
-
-
-### 11.2 单个参数
-
-```
-/*
-  MyBatis 参数封装：
-    * 单个参数：
-        1. POJO类型：直接使用，属性名 和 参数占位符名称 一致
-        2. Map集合：直接使用，键名 和 参数占位符名称 一致
-        3. Collection：封装为Map集合，可以使用@Param注解，替换Map集合中默认的arg键名
-            map.put("arg0",collection集合);
-            map.put("collection",collection集合);
-        4. List：封装为Map集合，可以使用@Param注解，替换Map集合中默认的arg键名
-            map.put("arg0",list集合);
-            map.put("collection",list集合);
-            map.put("list",list集合);
-        5. Array：封装为Map集合，可以使用@Param注解，替换Map集合中默认的arg键名
-            map.put("arg0",数组);
-            map.put("array",数组);
-        6. 其他类型：直接使用，例如单个的int参数
-       
-```
-
-* POJO 类型
-
-  直接使用。要求 `属性名` 和 `参数占位符名称` 一致
-
-* Map 集合类型
-
-  直接使用。要求 `map集合的键名` 和 `参数占位符名称` 一致
-
-* Collection 集合类型
-
-  Mybatis 会将集合封装到 map 集合中，如下：
-
-  > map.put("arg0"，collection集合);
-  >
-  > map.put("collection"，collection集合;
-
-  ==可以使用 `@Param` 注解替换map集合中默认的 arg 键名。==
-
-* List 集合类型
-
-  Mybatis 会将集合封装到 map 集合中，如下：
-
-  > map.put("arg0"，list集合);
-  >
-  > map.put("collection"，list集合);
-  >
-  > map.put("list"，list集合);
-
-  ==可以使用 `@Param` 注解替换map集合中默认的 arg 键名。==
-
-* Array 类型
-
-  Mybatis 会将集合封装到 map 集合中，如下：
-
-  > map.put("arg0"，数组);
-  >
-  > map.put("array"，数组);
-
-  ==可以使用 `@Param` 注解替换map集合中默认的 arg 键名。==
-
-* 其他类型
-
-  比如int类型，`参数占位符名称` 叫什么都可以。尽量做到见名知意
+<img src="images/image-20220314084513698.png" alt="image-20220314084513698" style="zoom:80%;" />
 
 ## 12. 注解开发
 
