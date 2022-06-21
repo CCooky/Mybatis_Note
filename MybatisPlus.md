@@ -545,18 +545,7 @@ lqw.orderByDesc(Bridge_2021_01::getSensorTime);
 lqw.last("limit 300");
 ```
 
-# 4. DQL编程控制
-
-增删改查四个操作中，查询是非常重要的也是非常复杂的操作，这块需要我们重点学习下，这节我们主要学习的内容有:
-
-* 条件查询方式
-* 查询投影
-* 查询条件设定
-* 字段映射与表名映射
-
-## 4.1 条件查询
-
-### 4.1.1 环境构建
+# 环境构建（减少日志打印）
 
 还是之前那个环境：
 
@@ -567,9 +556,9 @@ lqw.last("limit 300");
 1. **取消初始化spring日志打印**，resources目录下添加logback.xml（不用加任何依赖），名称固定，内容如下:（不需要导包）
 
   ```xml
-  <?xml version="1.0" encoding="UTF-8"?>
-  <configuration>
-  </configuration>
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+</configuration>
   ```
 
   ​		**说明:**logback.xml的配置内容，不是我们学习的重点，有兴趣可以自行百度查询。
@@ -581,12 +570,12 @@ lqw.last("limit 300");
   application.yml添加如下内容:
 
   ```yml
-  # mybatis-plus日志控制台输出
-  mybatis-plus:
-    configuration:
-      log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-    global-config:
-      banner: off # 关闭mybatisplus启动图标
+# mybatis-plus日志控制台输出
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    banner: off # 关闭mybatisplus启动图标
   ```
 
 3. **取消SpringBoot的log打印**
@@ -596,9 +585,9 @@ lqw.last("limit 300");
   application.yml添加如下内容:
 
   ```yml
-  spring:
-    main:
-      banner-mode: off # 关闭SpringBoot启动图标(banner)
+spring:
+  main:
+    banner-mode: off # 关闭SpringBoot启动图标(banner)
   ```
 
 解决控制台打印日志过多的相关操作可以不用去做，一般会被用来方便我们查看程序运行的结果。
@@ -610,6 +599,21 @@ lqw.last("limit 300");
 Then
 
 <img src="images/image-20220521172418781.png" alt="image-20220521172418781" style="zoom:80%;" />
+
+# 4. DQL编程控制
+
+增删改查四个操作中，查询是非常重要的也是非常复杂的操作，这块需要我们重点学习下，这节我们主要学习的内容有:
+
+* 条件查询方式
+* 查询投影
+* 查询条件设定
+* 字段映射与表名映射
+
+
+
+## 4.1 条件查询
+
+
 
 ### 4.1.2 多条件构建
 
@@ -2094,7 +2098,7 @@ class Mybatisplus03DqlApplicationTests {
 * **数据库相关配置**:读取数据库获取表和字段信息
 * **开发者自定义配置**:手工配置，比如ID生成策略
 
-## 6.2 代码生成器实现
+## 6.1 代码生成器实现
 
 #### 步骤1:创建一个Maven项目
 
@@ -2261,7 +2265,7 @@ public class CodeGenerator {
 
 至此代码生成器就已经完成工作，我们能快速根据数据库表来创建对应的类，简化我们的代码开发。
 
-### 5.3 MP中Service的CRUD
+## 6.2 MP中Service的CRUD
 
 回顾我们之前业务层代码的编写，编写接口和对应的实现类:
 
@@ -2334,9 +2338,83 @@ class Mybatisplus04GeneratorApplicationTests {
 
 查看官方文档:`https://mp.baomidou.com/guide/crud-interface.html`,这些提供的方法大家可以参考官方文档进行学习使用，方法的名称可能有些变化，但是方法对应的参数和返回值基本类似。
 
+# 7. 性能分析插件
+
+性能分析拦截器，用于输出每条 SQL 语句及其执行时间
+
+SQL 性能执行分析,开发环境使用，超过指定时间，停止运行。有助于发现问题
+
+## 1、配置插件
+
+**（1）参数说明**
+
+参数：maxTime： SQL 执行最大时长，超过自动停止运行，有助于发现问题。
+
+参数：format： SQL是否格式化，默认false。
+
+**（2）在 MybatisPlusConfig 中配置**
+
+```java
+/**
+ * SQL 执行性能分析插件
+ * 开发环境使用，线上不推荐。 maxTime 指的是 sql 最大执行时长
+ */
+@Bean
+@Profile({"dev","test"})// 设置 dev test 环境开启
+public PerformanceInterceptor performanceInterceptor() {
+    PerformanceInterceptor performanceInterceptor = new PerformanceInterceptor();
+    performanceInterceptor.setMaxTime(100);//ms，超过此处设置的ms则sql不执行
+    performanceInterceptor.setFormat(true);
+    return performanceInterceptor;
+}
+```
+
+**（3）Spring Boot 中设置dev环境**
+
+```java
+#环境设置：dev、test、prod
+spring.profiles.active=dev
+```
+
+可以针对各环境新建不同的配置文件`application-dev.properties`、`application-test.properties`、`application-prod.properties`
+
+也可以自定义环境名称：如test1、test2
+
+## 2、测试
+
+**（1）常规测试**
+
+```java
+/**
+ * 测试 性能分析插件
+ */
+@Test
+public void testPerformance() {
+    User user = new User();
+    user.setName("我是Helen");
+    user.setEmail("helen@sina.com");
+    user.setAge(18);
+    userMapper.insert(user);
+}
+```
+
+**输出：**
+
+![img](images/bb355a17-3cdc-4f0a-82f2-232defbd235b.png)
+
+**（2）将maxTime 改小之后再次进行测试**
 
 
 
+```
+performanceInterceptor.setMaxTime(5);//ms，超过此处设置的ms不执行
+```
+
+如果执行时间过长，则抛出异常：The SQL execution time is too large, 
+
+**输出：**
+
+![img](images/1ae5ae68-b6b2-4801-ae26-29835b175b24.png)
 
  
 
