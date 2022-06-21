@@ -416,6 +416,53 @@ setting里面搜索SQl dialects，然后设置成为MySQL就行。
 sqlSession.commit();
 ```
 
+#### 参数占位符
+
+查询到的结果很好理解就是id为1的这行数据。而这里我们需要看控制台显示的SQL语句，能看到使用？进行占位。说明我们在映射配置文件中的写的 `#{id}` 最终会被？进行占位。接下来我们就聊聊映射配置文件中的参数占位符。
+
+mybatis提供了两种参数占位符：
+
+*  1 **#{ }** ：执行SQL时，会将 #{} 占位符替换为？，将来自动设置参数值。从上述例子可以看出使用#{} 底层使用的是 `PreparedStatement`
+
+* 还有一种时**${ }**。
+
+  ```xml
+  <select id="selectById"  resultMap="brandResultMap">
+      select *
+      from tb_brand where id = ${id};
+  </select>
+  ```
+
+  重新运行查看结果如下：
+
+  <img src="images/image-20210729184156019.png" alt="image-20210729184156019" style="zoom:70%;" />
+
+> ==注意：==从上面两个例子可以看出，以后开发我们使用 #{} 参数占位符。
+
+####  SQL语句中殊字段处理
+
+以后肯定会在SQL语句中写一下特殊字符，比如某一个字段大于某个值，如下图
+
+<img src="images/image-20210729184756094-16545747739511.png" alt="image-20210729184756094" style="zoom:80%;" />
+
+可以看出报错了，因为映射配置文件是xml类型的问题，而 > < 等这些字符在xml中有特殊含义，所以此时我们需要将这些符号进行转义，可以使用以下两种方式进行转义
+
+* 转义字符
+
+  下图的 `&lt;` 就是 `<` 的转义字符。
+
+  <img src="images/image-20210729185128686-16545747739512.png" alt="image-20210729185128686" style="zoom:60%;" />
+
+* <![CDATA[内容]]>
+
+  <img src="images/image-20210729185030318-16545747739513.png" alt="image-20210729185030318" style="zoom:60%;" />
+  
+  
+
+
+
+
+
 ## 3. Mapper代理开发
 
 #### 概述
@@ -993,7 +1040,7 @@ boolean updateByIds(@Param("ids") String[] ids, @Param("bridgeAlertRecord") Brid
 
 ### 5.2 单个参数
 
-```
+```java
 /*
   MyBatis 参数封装：
     * 单个参数：
@@ -1065,10 +1112,10 @@ boolean updateByIds(@Param("ids") String[] ids, @Param("bridgeAlertRecord") Brid
 
 ```xml
 <if test="startTime !=null and startTime !='' ">
-         <![CDATA[ and createTime  >=  #{startTime}  ]]>
+         <![CDATA[ and create_time  >=  #{startTime}  ]]>
 </if>
 <if test="endTime !=null and endTime!='' "  >
-         <![CDATA[ and createTime <=  #{endTime}  ]]>
+         <![CDATA[ and create_time <=  #{endTime}  ]]>
 </if>
 ```
 
@@ -1078,6 +1125,47 @@ boolean updateByIds(@Param("ids") String[] ids, @Param("bridgeAlertRecord") Brid
 update goods_msg SET update_date = DATE_FORMAT(NOW(),'%Y-%m-%d %H:%i:%s') WHERE id = '1111122222';
 -- 对应时间格式2022-2-20 12:30:30
 ```
+
+### 6.3 超级多表查询
+
+我们知道，在一般情况下，在查询数据时，是确定了表格名字的，这样一来，每一张表格基本都会对应一个[实体类](https://so.csdn.net/so/search?q=实体类&spm=1001.2101.3001.7020)，但也有例外的情况，在某些特殊需求中，我们要**先通过给的条件确定查询哪一种表的**，因此我们需要考虑动态查询表数据的方案。
+
+我们需要将表名作为mapper层传递的参数！！！
+
+```java
+@Mapper
+public interface BridgeJsdDataMapper extends BaseMapper<BridgeJsdData> {
+
+//    这里先要确定表名，bridge_bsgjsd1_2022_01
+//    桥梁名+测点名===》bsgjsd1
+//    时间===》2022_01
+    List<BridgeJsdData> getJSDDataByCondition(@Param("sheetName") String sheetName, @Param("startTime") String startTime, @Param("endTime") String endTime);
+}
+```
+
+```xml
+<select id="getJSDDataByCondition" resultType="cn.exrick.xboot.modules.bridge.entity.BridgeJsdData" statementType="STATEMENT">
+    select * from ${sheetName}
+    <where>
+        <if test="startTime !=null and startTime !='' ">
+            <![CDATA[ and sensor_time  >=  "${startTime}"  ]]>
+        </if>
+        <if test="endTime !=null and endTime!='' "  >
+            <![CDATA[ and sensor_time <=  "${endTime}"  ]]>
+        </if>
+    </where>
+</select>
+```
+
+==特别注意一点，${ }使用的时候，是直接将传入的参数替换掉 这个占位符，不带上引号哦，sql语句内需要引号的就要自己加上，#{ }就会自动按需求带上== 
+
+其中，这里需要用Mybatis的另外一个不怎么用的参数占位符——**${ }** , 还记得我们在学习JavaWeb的Jdbc部分的SQL注入问题，常用的 **#{ }**采用的是预编译（PreStatement），可以防止SQL注入；而**${ }**采用的是非预编译（Statement）。
+
+预编译与非预编译的区别：如果是预编译的，那么系统在初始化时就会读取这段sql代码，将指定的实体类中的字段替换了类似 #{ }这样的语句，就是形成了类似这样的语句：**”select * from tableName where code=?”**  这个时候你在系统运行时再想向这句sql中替换tableName或者code，结果可想而知。如果是非预编译呢，结果刚好相反，他会在系统运行时才会去生成这样类似的语句。此时就可以去替换这些动态的字段或者表名之类：**”select * from bridge_jsd where code= 1011 ”**。对于非预编译一定要记得使用${}这个符号来接收参数。
+
+
+
+
 
 ## 7. Mybatis多表查询
 
