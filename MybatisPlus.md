@@ -1772,6 +1772,7 @@ public class User {
     private String tel;
     @TableField(exist=false)
     private Integer online;
+  
     @TableLogic(value="0",delval="1")
     //value为正常数据的值，delval为删除数据的值
     private Integer deleted;
