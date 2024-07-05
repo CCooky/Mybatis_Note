@@ -94,6 +94,8 @@ public static void main(String[] args) throws IOException {
 }
 ```
 
+
+
 # MyBatis
 
 ## 1. 概述
@@ -105,6 +107,8 @@ public static void main(String[] args) throws IOException {
 -  mybatis 是一个优秀的基于java的持久层框架，它内部封装了jdbc，使开发者只需要关注sql语句本身，而不需要花费精力去处理加载驱动、创建连接、创建statement等繁杂的过程。
 -  mybatis通过xml或注解的方式将要执行的各种 statement配置起来，并通过java对象和statement中sql的动态参数进行映射生成最终执行的sql语句。
 -  最后mybatis框架执行sql并将结果映射为java对象并返回。采用ORM思想（ObjectRelationMapping）解决了实体对象和数据库表映射的问题，对jdbc 进行了封装，屏蔽了jdbc api 底层访问细节，使我们不用与jdbc api打交道，就可以完成对数据库的持久化操作。
+
+
 
 <img src="images/image-20220129153501890.png" alt="image-20220129153501890" style="zoom:80%;" />
 
@@ -182,7 +186,7 @@ INSERT INTO tb_user VALUES (3, '王五', '11', '男', '西安');
         </dependency>
 ```
 
-**第三步：logback的配置文件，放在main的resurces下。**
+**第三步：logback的配置文件，放在main的resources下。**
 
 ​				logback.xml
 
@@ -253,7 +257,7 @@ INSERT INTO tb_user VALUES (3, '王五', '11', '男', '西安');
 com.CCooky.pojo.User
 ```
 
-更改上面的ResultType。使用的是类路径，在main.java下的，它可以自动识别
+更改上面的ResultType。**使用的是类路径，在src.main.java下的，它可以自动识别**
 
 ```xml
 <select id="selectAll" resultType="com.CCooky.pojo.User">
@@ -323,13 +327,13 @@ SqlSessionFactory sqlSessionFactory = new 	SqlSessionFactoryBuilder().build(inpu
 
 #### **SqlSessionFactory**
 
-**工厂对象**，通过它来创建我们的会话对象SqlSession。并且有多个方法创建 SqlSession 。
+**工厂对象**，通过它来创建我们的sql会话对象SqlSession。并且有多个方法创建 SqlSession 。
 
 <img src="images/image-20220313153930512.png" alt="image-20220313153930512" style="zoom:80%;" />
 
 ####  **SqlSession**
 
-**会话对象**，SqlSession 实例在 MyBatis 中是非常强大的一个类。在这里你会看到所有执行语句、提交或回滚事务和获取映射器实例的方法。
+**会话对象**，SqlSession 实例在 MyBatis 中是非常强大的一个类。在这里你会看到**所有执行语句、提交或回滚事务和获取映射器实例的方法。**
 
 执行语句的方法主要有：（后面代理开发，这个连接即可）
 
@@ -422,9 +426,9 @@ sqlSession.commit();
 
 mybatis提供了两种参数占位符：
 
-*  1 **#{ }** ：执行SQL时，会将 #{} 占位符替换为？，将来自动设置参数值。从上述例子可以看出使用#{} 底层使用的是 `PreparedStatement`
+*   **#{ }** ：执行SQL时，会将 #{} 占位符替换为？，将来自动设置参数值。从上述例子可以看出使用#{} 底层使用的是 `PreparedStatement`
 
-* 还有一种时**${ }**。
+* 还有一种是：**${ }**。
 
   ```xml
   <select id="selectById"  resultMap="brandResultMap">
@@ -445,7 +449,7 @@ mybatis提供了两种参数占位符：
 
 <img src="images/image-20210729184756094-16545747739511.png" alt="image-20210729184756094" style="zoom:80%;" />
 
-可以看出报错了，因为映射配置文件是xml类型的问题，而 > < 等这些字符在xml中有特殊含义，所以此时我们需要将这些符号进行转义，可以使用以下两种方式进行转义
+可以看出报错了，**因为映射配置文件是xml类型的问题，而 > < 等这些字符在xml中有特殊含义**，所以此时我们需要将这些符号进行转义，可以使用以下两种方式进行转义
 
 * 转义字符
 
@@ -453,7 +457,7 @@ mybatis提供了两种参数占位符：
 
   <img src="images/image-20210729185128686-16545747739512.png" alt="image-20210729185128686" style="zoom:60%;" />
 
-* <![CDATA[内容]]>
+* **<![CDATA[内容]] >**
 
   <img src="images/image-20210729185030318-16545747739513.png" alt="image-20210729185030318" style="zoom:60%;" />
   
@@ -490,17 +494,17 @@ List<User> users = userMapper.selectAll();
 
 #### 实现方式
 
-必须的规则哦，按照一模一样的要求才行
+==必须的规则哦，按照一模一样的要求才行==
 
 **步骤：**
 
 > 1. 定义SQL映射文件同名的Mapper接口，并且该Mapper接口与SQL映射文件要在同一个目录下
 >
-> 2. 设置SQL映射文件的namespace为Mapper接口全限定名。
+> 2. 设置SQL映射文件的namespace为Mapper接口 全限定名。
 >
 >    **全限定类名：**就是类名全称，即全限定名 = 包名+类名
 >
-> 3. 在Mapper接口里面定义方法，方法名对应SQL映射文件中sql语句的id，并且参数类型，返回值一模一样
+> 3. 在Mapper接口里面定义方法，方法名对应SQL映射文件中sql语句的 id，并且参数类型，返回值一模一样
 >
 > 4. 编码
 >
@@ -509,7 +513,7 @@ List<User> users = userMapper.selectAll();
 
 **第一步：建立相同的目录结构**
 
-这里有一个问题，因为我们的所有文件是放在resources下面的，代码文件在java目录下面，肯定不能直接放在一起啊，那不就项目结构乱套了。
+这里有一个问题，因为我们的所有配置文件是放在resources下面的，代码文件在java目录下面，肯定不能直接放在一起啊，那不就项目结构乱套了。
 
 这里Maven早就给我们想到了这一点，Maven在进行main目录的编译时，是把java目录和resources目录合在一起编译的，不相信的可以自己去试试，只要说：==UserMapper接口相对于java目录的路径与SQL映射文件相对于resources目录的路径，一模一样==，那么他们在编译的时候就会放在一起，wowowowo，牛的哦。
 
@@ -529,9 +533,9 @@ List<User> users = userMapper.selectAll();
 
 <img src="images/image-20220129175317147.png" alt="image-20220129175317147" style="zoom:67%;" />
 
-我们这个mybatis-config.xml中加载SQl映射文件，每次要写全限定名，是不是很麻烦啊，以后可能有几十个需要加载，那不完蛋了。所以说Mybatis给我们想好了。
+我们这个**mybatis-config.xml中加载SQl映射文件，每次要写全限定名，是不是很麻烦啊**，以后可能有几十个需要加载，那不完蛋了。所以说Mybatis给我们想好了。
 
-只要我们使用的是代理开发模式，我们就可以采用Mapper代理的方式加载，原理是包扫描的方式加载SQL映射文件。它会自动加载这个包下面的所有SQL映射文件（注意，编译后，我们所有Mapper.xml都放在了包下面哦，细品，真的牛）
+只要我们使用的是代理开发模式，我们就可以采用Mapper代理的方式加载，==原理是包扫描的方式加载SQL映射文件。==它会自动加载这个包下面的所有SQL映射文件（注意，编译后，我们所有Mapper.xml都放在了包下面哦，细品，真的牛）
 
 ```java
     <!--加载resources下的SQL的映射文件-->
@@ -599,7 +603,9 @@ public interface UserMapper {
 
 ## 4. Mybatis核心配置文件
 
-在Mybatis的官网里面，有详细的配置信息。这里先只涉及到了三个内容，以后涉及到了以后再补充。详细的解析取官网，我已经写了在代码注释部分。==注意：一定要按照别人写的这个标签顺序来写配置文件，因为这是别人的约束嘛，xml的约束方式之一。==
+在Mybatis的官网里面，有详细的配置信息。这里先只涉及到了三个内容，以后涉及到了以后再补充。详细的解析取官网，我已经写了在代码注释部分。
+
+==注意：一定要按照别人写的这个标签顺序来写配置文件，因为这是别人的约束嘛，xml的约束方式之一。==
 
 <img src="images/image-20220129201427906.png" alt="image-20220129201427906" style="zoom: 80%;" />
 
@@ -642,15 +648,15 @@ public interface UserMapper {
 
 ### **3. Properties标签**
 
-该标签可以加载额外配置的properties文件。例如，实际开发中，习惯将数据源的配置信息单独抽取成一个properties文件，然后用properties标签引入，通过 ${ } 表达式拿取里面的数据。
+该标签可以加载额外配置的properties文件。例如，实际开发中，习惯将数据源的配置信息单独抽取成一个properties文件，然后用properties标签引入，通过==${ } 表达式==拿取里面的数据。
 
 ![image-20220313151603277](images/image-20220313151603277.png)
 
 ### **4. typeAliases标签**
 
-1. 针对SQL语句里面的resultType而言，可以简写数据库映射的java对象名称。
-2. 类型别名可为 Java 类型设置一个缩写名字,仅用于XML配置,意在降低冗余的全限定类名书写。
-3. 在没有注解的情况下，会使用 **Bean 的首字母小写的非限定类名**来作为它的别名。
+1. 针对SQL语句里面的resultType而言，可以**简写数据库映射的java对象名称**。
+2. 类型别名可为 Java 类型设置一个缩写名字,仅用于XML配置，==意在降低冗余的全限定类名书写。==
+3. 在没有注解的情况下，会使用 **JavaBean 的首字母小写的非限定类名**来作为它的别名。
 
 ```xml
 <!--扫描的是java目录下面的，包扫描器。-->
@@ -669,13 +675,13 @@ public interface UserMapper {
 
 ###  5. **typeHandlers标签**
 
-简单说，就是数据库的数据类型与我们Java的数据类型不是一样的，我们要对其进行转换。
+简单说，就是==数据库的数据类型==与我们==Java的数据类型==不是一样的，我们要对其进行转换。
 
 无论是 MyBatis 在预处理语句（PreparedStatement）中设置一个参数时，还是从结果集中取出一个值时， 都会用类型处理器将数据库获取的值以合适的方式转换成 Java 类型。下表描述了一些默认的类型处理器（截取部分）。
 
 <img src="images/image-20220314085539067.png" alt="image-20220314085539067" style="zoom:80%;" />
 
-但上面提供的并不能满足我们实际开发中的所有需求。例如说，我们想把Java的Date类型，在数据库内以时间毫秒值的形式存储，取出来时转换成java的Date，即java的Date与数据库的varchar毫秒值之间转换。（mybatis默认的转换是Date——yyyy-MM-dd HH:mm:ss）。
+但上面提供的并不能满足我们实际开发中的所有需求。**例如说，我们想把Java的Date类型，在数据库内以时间毫秒值的形式存储，取出来时转换成java的Date**，即java的Date与数据库的varchar毫秒值之间转换。==（mybatis默认的转换是Date——yyyy-MM-dd HH:mm:ss）。==
 
 办法：你可以重写类型处理器或创建新的类型处理器来处理不支持的或非标准的类型。具体做法为：实现org.apache.ibatis.type.TypeHandler 接口或继承一个实现类org.apache.ibatis.type.BaseTypeHandler， 然后可以选择性地将它映射到一个JDBC类型。
 
@@ -735,9 +741,9 @@ public class MyDateTypeHandler extends BaseTypeHandler<Date> {
 
 <img src="images/image-20220314122111625.png" alt="image-20220314122111625" style="zoom:67%;" />
 
-###  **6. plugins标签**
+###  **6. plugins标签-插件功能**
 
-MyBatis可以使用第三方的插件来对功能进行扩展，**分页助手PageHelper**是将分页的复杂操作进行封装，使用简单的方式即可获得分页的相关数据。使用分页助手不用添加什么其他的代码，也不用继承实现之类的，他就像我们的IDEA里面的插件，只要配置了就会在内部直接起作用，卧槽真的舒服！！！
+**MyBatis可以使用第三方的插件来对功能进行扩展**，**分页助手PageHelper**是将分页的复杂操作进行封装，使用简单的方式即可获得分页的相关数据。**使用分页助手不用添加什么其他的代码，也不用继承实现之类的，他就像我们的IDEA里面的插件，只要配置了就会在内部直接起作用，卧槽真的舒服！！！**
 
 开发步骤：
 
@@ -776,12 +782,15 @@ MyBatis可以使用第三方的插件来对功能进行扩展，**分页助手Pa
 
 第三步：直接使用，666666
 
+==这个相对于不是在数据库里面做分页，而是直接查询数据完后，拿到我们持久层代码做分页==
+
 ```java
 @Test
 public void test3() throws IOException {
     InputStream resourceAsStream = Resources.getResourceAsStream("sqlMapConfig.xml");
     SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(resourceAsStream);
     SqlSession sqlSession = sqlSessionFactory.openSession();
+  // 
     UserMapper mapper = sqlSession.getMapper(UserMapper.class);
 
     //设置分页相关参数   当前页+每页显示的条数
@@ -794,6 +803,7 @@ public void test3() throws IOException {
 
     //获得与分页相关参数
     PageInfo<User> pageInfo = new PageInfo<User>(userList);
+  
     System.out.println("当前页："+pageInfo.getPageNum());
     System.out.println("每页显示条数："+pageInfo.getPageSize());
     System.out.println("总条数："+pageInfo.getTotal());
@@ -866,13 +876,17 @@ jdbc.password= 5240zhouquan
 </configuration>
 ```
 
+
+
+
+
 ## 5.  Mybatis参数传递
 
-正如前面所看见的，我们Mapper接口与Mapper.xml（SQL映射文件）的参数关系。在映射文件中，我们不用写接收参数的代码，就是直接拿传入的参数在使用，然后Mapper接口方法的参数需要按照一定的标准才行！！！下面详细解释一下。
+正如前面所看见的，我们Mapper接口与**Mapper.xml（SQL映射文件）**的参数关系。在映射文件中，我们不用写接收参数的代码，就是直接拿传入的参数在使用，然后Mapper接口方法的参数需要按照一定的标准才行！！！下面详细解释一下。
 
 Mybatis 接口方法中可以接收的参数类型如下，如下：
 
-* 多个参数（使用较少）
+* 多个参数
 * 单个参数：单个参数又可以是如下类型
   * POJO 类型（类似Javabean）
   * Map 集合类型
@@ -884,16 +898,16 @@ Mybatis 接口方法中可以接收的参数类型如下，如下：
 ### 5.1  多个参数
 
 ```java
-* 多个参数：Mybatis原理是将其封装为Map集合,可以使用@Param注解，替换Map集合中默认的arg键名
+* 多个参数：Mybatis原理是将其多个参数封装为Map集合,可以使用@Param注解，替换Map集合中默认的arg键名
     map.put("arg0",参数值1)
     map.put("param1",参数值1)
     map.put("param2",参数值2)
-    map.put("agr1",参数值2)
+    map.put("arg1",参数值2)
     ---------------@Param("username")
     map.put("username",参数值1)
     map.put("param1",参数值1)
     map.put("param2",参数值2)
-    map.put("agr1",参数值2)
+    map.put("arg1",参数值2)
 ```
 
 如下面的代码，就是接收两个参数，而接收多个参数需要使用 `@Param` 注解，那么为什么要加该注解呢？这个问题要弄明白就必须来研究Mybatis 底层对于这些参数是如何处理的。
@@ -1018,6 +1032,10 @@ User select(@Param("username1") String username,@Param("password1") String passw
 
 ==结论：以后接口参数是多个时，在每个参数上都使用 `@Param` 注解。这样代码的可读性更高。==
 
+
+
+
+
 #### 传递自定义对象和数组
 
 ```java
@@ -1038,35 +1056,62 @@ boolean updateByIds(@Param("ids") String[] ids, @Param("bridgeAlertRecord") Brid
 </update>
 ```
 
+
+
 ### 5.2 单个参数
 
 ```java
 /*
   MyBatis 参数封装：
     * 单个参数：
-        1. POJO类型：直接使用，属性名 和 参数占位符名称 一致
-        2. Map集合：直接使用，键名 和 参数占位符名称 一致
-        3. Collection：封装为Map集合，可以使用@Param注解，替换Map集合中默认的arg键名
+        1. POJO类型：直接使用，实体类属性名 和 参数占位符名称 一致
+        
+        2. Map集合：直接使用，Map的键名 和 参数占位符名称 一致
+        
+        3. Collection：封装为Map集合，接口参数可以使用@Param注解，替换Map集合中默认的arg键名
             map.put("arg0",collection集合);
             map.put("collection",collection集合);
-        4. List：封装为Map集合，可以使用@Param注解，替换Map集合中默认的arg键名
+            
+        4. List：封装为Map集合，接口参数可以使用@Param注解，替换Map集合中默认的arg键名
             map.put("arg0",list集合);
             map.put("collection",list集合);
             map.put("list",list集合);
-        5. Array：封装为Map集合，可以使用@Param注解，替换Map集合中默认的arg键名
+            
+        5. Array数组：封装为Map集合，接口参数可以使用@Param注解，替换Map集合中默认的arg键名
             map.put("arg0",数组);
             map.put("array",数组);
-        6. 其他类型：直接使用，例如单个的int参数
+            
+        6. 其他类型，如int、String、float等：直接使用，#{随便写}参数占位符名称 叫什么都可以，反正就一个单独的输入，也不会有歧义。
+        	 尽量做到见名知意
       
 ```
 
 * POJO 类型
 
-  直接使用。要求 `属性名` 和 `参数占位符名称` 一致
+  直接使用。要求 `属性名` 和 `参数占位符名称` 一致。
+
+  将多个参数封装成一个 实体对象 ，将该实体对象作为接口的方法参数。该方式要求在映射配置文件的SQL中使用 `#{内容}` 时，里面的内容必须和实体类属性名保持一致。
+
+  ```java
+  // 代理接口，方法
+  void add(Brand brand);
+  
+  // sql映射文件
+  <insert id="add">
+      insert into tb_brand (brand_name, company_name, ordered, description, status)
+      values (#{brandName}, #{companyName}, #{ordered}, #{description}, #{status});
+  </insert>
+  ```
 
 * Map 集合类型
 
-  直接使用。要求 `map集合的键名` 和 `参数占位符名称` 一致
+  直接使用。要求 `map集合的键名` 和 `参数占位符名称` 一致。
+
+  将多个参数封装到map集合中，将map集合作为接口的方法参数。该方式要求在映射配置文件的SQL中使用 `#{内容}` 时，里面的内容必须和map集合中键的名称一致。
+
+  ```java
+  List<Brand> selectByCondition(Map map);
+  ```
 
 * Collection 集合类型
 
@@ -1074,9 +1119,11 @@ boolean updateByIds(@Param("ids") String[] ids, @Param("bridgeAlertRecord") Brid
 
   > map.put("arg0"，collection集合);
   >
-  > map.put("collection"，collection集合;
+  > map.put("collection"，collection集合）;
 
   ==可以使用 `@Param` 注解替换map集合中默认的 arg 键名。==
+
+  
 
 * List 集合类型
 
@@ -1090,6 +1137,8 @@ boolean updateByIds(@Param("ids") String[] ids, @Param("bridgeAlertRecord") Brid
 
   ==可以使用 `@Param` 注解替换map集合中默认的 arg 键名。==
 
+
+
 * Array 类型
 
   Mybatis 会将集合封装到 map 集合中，如下：
@@ -1100,9 +1149,30 @@ boolean updateByIds(@Param("ids") String[] ids, @Param("bridgeAlertRecord") Brid
 
   ==可以使用 `@Param` 注解替换map集合中默认的 arg 键名。==
 
+
+
 * 其他类型
 
   比如int类型，`参数占位符名称` 叫什么都可以。尽量做到见名知意
+
+```java
+/**
+  * 代理接口：根据Id查询
+  */
+Brand selectById(int id);
+
+// sql映射文件
+<select id="selectById"  resultMap="brandResultMap">
+    select *
+    from tb_brand where id = #{id};
+</select>
+```
+
+
+
+
+
+
 
 ## 6. 技巧篇
 
@@ -1119,6 +1189,8 @@ boolean updateByIds(@Param("ids") String[] ids, @Param("bridgeAlertRecord") Brid
 </if>
 ```
 
+
+
 ### 6.2 更新数据时更新时间字段
 
 ```sql
@@ -1126,7 +1198,9 @@ update goods_msg SET update_date = DATE_FORMAT(NOW(),'%Y-%m-%d %H:%i:%s') WHERE 
 -- 对应时间格式2022-2-20 12:30:30
 ```
 
-### 6.3 超级多表查询
+
+
+### 6.3 ${ }的使用场景
 
 我们知道，在一般情况下，在查询数据时，是确定了表格名字的，这样一来，每一张表格基本都会对应一个[实体类](https://so.csdn.net/so/search?q=实体类&spm=1001.2101.3001.7020)，但也有例外的情况，在某些特殊需求中，我们要**先通过给的条件确定查询哪一种表的**，因此我们需要考虑动态查询表数据的方案。
 
@@ -1157,7 +1231,9 @@ public interface BridgeJsdDataMapper extends BaseMapper<BridgeJsdData> {
 </select>
 ```
 
-==特别注意一点，${ }使用的时候，是直接将传入的参数替换掉 这个占位符，不带上引号哦，sql语句内需要引号的就要自己加上，#{ }就会自动按需求带上== 
+==特别注意一点，${ }使用的时候，是直接将传入的参数替换掉 这个占位符，不带上引号哦，sql语句内需要引号的就要自己加上，==
+
+==#{ }就会自动按需求带上，就是如果传入的是字符串、日期就会带上，是数值就不带；这个主要是由sql语句的要求决定的撒== 
 
 其中，这里需要用Mybatis的另外一个不怎么用的参数占位符——**${ }** , 还记得我们在学习JavaWeb的Jdbc部分的SQL注入问题，常用的 **#{ }**采用的是预编译（PreStatement），可以防止SQL注入；而**${ }**采用的是非预编译（Statement）。
 
@@ -1181,7 +1257,7 @@ public interface BridgeJsdDataMapper extends BaseMapper<BridgeJsdData> {
 
 这里学习的主要是，我们通过多表查询得到了复杂的数据列，（可能既有用户的信息，也有订单的信息，但在java里面这部分对应的是两个POJO），在mybatis里面如何去封装这些复杂的数据列。
 
-#### 一对一查询
+#### 一对一查询< /association>标签
 
 用户表和订单表的关系为，一个用户有多个订单，一个订单只从属于一个用户。（对于订单而言：他是一对一的关系，而对于用户而言是一对多关系哦）
 
@@ -1199,7 +1275,7 @@ public interface BridgeJsdDataMapper extends BaseMapper<BridgeJsdData> {
 
 **Java里面的实现：**
 
-首先，我们user类和order类属性。然后核心就在这里，我们在Order实体里面，添加一个User类的属性。相应的添加getter、setter、toString等方法。
+首先，我们user类和order类属性。==**然后核心就在这里，我们在Order实体里面，添加一个User类的属性。**==相应的添加getter、setter、toString等方法。
 
 <img src="images/image-20220314163128525.png" alt="image-20220314163128525" style="zoom: 67%;" />
 
@@ -1227,7 +1303,7 @@ public interface BridgeJsdDataMapper extends BaseMapper<BridgeJsdData> {
 </mapper>
 ```
 
-对于映射到user属性，还有另外一种写法如下：**< /association>标签**
+对于映射到user属性，还有另外一种写法如下==：**< /association>标签**==
 
 ```xml
 <?xml version="1.0" encoding="UTF-8" ?>
@@ -1238,7 +1314,6 @@ public interface BridgeJsdDataMapper extends BaseMapper<BridgeJsdData> {
         <id column="oid" property="id"></id>
         <result column="ordertime" property="ordertime"></result>
         <result column="total" property="total"></result>
-        <result column="uid" property="user.id"></result>
       	// 映射到user属性
         <!--
             property: 当前实体(order)中的属性名称(private User user)
@@ -1258,7 +1333,7 @@ public interface BridgeJsdDataMapper extends BaseMapper<BridgeJsdData> {
 </mapper>
 ```
 
-#### **一对多查询**
+#### **一对多查询< collection>标签**
 
 用户表和订单表的关系为，一个用户有多个订单，一个订单只从属于一个用户
 
@@ -1266,7 +1341,12 @@ public interface BridgeJsdDataMapper extends BaseMapper<BridgeJsdData> {
 
 <img src="images/image-20220314163602494.png" alt="image-20220314163602494" style="zoom: 80%;" />
 
-对应的sql语句：`select *,o.id oid from user u left join orders o on u.id=o.uid;`
+对应的sql语句：
+
+```sql
+select *, o.id as oid  from user as u left join orders as o 
+on u.id=o.uid;
+```
 
 查询的结果如下：
 
@@ -1455,7 +1535,7 @@ WHERE u.id=ur.userId AND ur.roleId=r.id
 * 主要功能
 
   * SQL映射配置文件 和 接口方法 间相互跳转
-  * 根据接口方法生成 statement 。（statement就是前面我们在Mapper写的SQl语句，专业术语叫做statement）
+  * **根据接口方法生成 statement 。（statement就是前面我们在Mapper写的SQl语句，专业术语叫做statement）**
 
 * 安装方式
 
@@ -1593,9 +1673,9 @@ public void testSelectAll() throws IOException {
 
 ### 3.5 resultMap解决上述问题
 
-==使用resultMap来定义字段和属性的映射关系的方式解决上述问题。==
+==使用resultMap来定义数据库字段和实体类属性的映射关系的方式解决上述问题。==
 
-原理就是，一个替换的功能。将数据库返回过来数据的brand_name字段和其对应数据，替换成brandName和其对应的数据，然后再给Mybatis坐自动封装注入，这样就有了。
+**原理就是，一个替换的功能**。**将数据库返回过来数据的brand_name字段和其对应数据，替换成brandName和其对应的数据**，然后==再给Mybatis坐自动封装注入==，这样就有了。
 
 将resultMap写好后，代替Statement（sql语句）的返回值类型就行了。
 
@@ -1632,13 +1712,15 @@ public void testSelectAll() throws IOException {
     </resultMap>
   
 		<!-- 
-			注意，要把返回值类型，改成这个resultMap哦，相对于替换了前面的那个实体类
+			注意，要把返回值类型，改成这个resultMap哦，相对于替换了前面的那个实体类，不是resultType了
 		-->
     <select id="selectAll" resultMap="brandResultMap">
         select * from tb_brand;
     </select>
 </mapper>
 ```
+
+==使用的注解形式编写sql的话，就需要加上一个注解==
 
 ```java
 /**
@@ -1734,19 +1816,19 @@ public void testSelectById() throws IOException {
 
 查询到的结果很好理解就是id为1的这行数据。而这里我们需要看控制台显示的SQL语句，能看到使用？进行占位。说明我们在映射配置文件中的写的 `#{id}` 最终会被？进行占位。接下来我们就聊聊映射配置文件中的参数占位符。
 
-mybatis提供了两种参数占位符：
+**mybatis提供了两种参数占位符：**
 
-```
+```java
 * 参数占位符
-    #{}: 最终会将其替换成？为了防止SQL注入。将来自动设置参数值。
+    #{}: 最终会将其替换成？为了防止SQL注入。将来自动设置参数值。会自动给传入的数据加上双引号 “”
     		 底层使用的是PreparedStatement
 ```
 
 上面的例子就是，使用的#{}。
 
-```
+```java
 * 参数占位符
-    ${}：会进行拼接sql，存在问题
+    ${}：会进行拼接sql，存在问题，不会给传入的数据加上双引号 “”
 ```
 
 <img src="images/image-20220130113954419.png" alt="image-20220130113954419" style="zoom:80%;" />
@@ -1757,7 +1839,7 @@ mybatis提供了两种参数占位符：
 
 ### 4.5 parameterType使用
 
-对于有参数的mapper接口方法，我们在映射配置文件中应该配置 `ParameterType` 来指定参数类型。只不过该属性都可以省略，因为我们在写接口方法的时候，不就给参数指定了类型嘛。
+对于有参数的mapper接口方法，我们在映射配置文件中应该配置 `ParameterType` 来指定参数类型。**只不过该属性都可以省略，因为我们在写接口方法的时候，不就给参数指定了类型嘛。**
 
 如下图：
 
@@ -1768,13 +1850,13 @@ mybatis提供了两种参数占位符：
 </select>
 ```
 
-### 4.6 SQL语句中特殊字段处理
+### 4.6 SQL语句中特殊字段处理**<![CDATA[内容]] >**
 
 以后肯定会在SQL语句中写一下特殊字符，比如某一个字段大于某个值，如下图
 
 <img src="images/image-20210729184756094.png" alt="image-20210729184756094" style="zoom:80%;" />
 
-可以看出报错了，因为映射配置文件是xml类型的问题，而 > < 等这些字符在xml中有特殊含义，所以此时我们需要将这些符号进行转义，可以使用以下两种方式进行转义.
+可以看出报错了，==因为映射配置文件是xml类型的问题==，==而 > < 等这些字符在xml中有特殊含义==，所以此时我们需要将这些符号进行转义，可以使用以下两种方式进行转义.
 
 SE部分都讲过了一遍。
 
@@ -1784,7 +1866,7 @@ SE部分都讲过了一遍。
 
   <img src="images/image-20210729185128686.png" alt="image-20210729185128686" style="zoom:60%;" />
 
-* <![CDATA[内容]]>
+* **<![CDATA[内容]] >**
 
   <img src="images/image-20210729185030318.png" alt="image-20210729185030318" style="zoom:60%;" />
 
@@ -1841,7 +1923,7 @@ SE部分都讲过了一遍。
    List<Brand> selectByCondition(Map map);
    ```
 
-所以说啊，写SQL语句的时候，我们最好占位符里面的内容就写成——实体类的属性名，虽然不是必须，但这会方便很多，避免很多什么一一对应的问题，每次还要一个个看。我们就统一规范，写的代码才优雅！！！
+所以说啊，写SQL语句的时候，==我们最好占位符里面的内容就写成——实体类的属性名==，虽然不是必须，但这会方便很多，避免很多什么一一对应的问题，每次还要一个个看。我们就统一规范，写的代码才优雅！！！
 
 ### 5.2  编写SQL语句
 
@@ -1974,10 +2056,10 @@ select * from tb_brand where status = #{status} and company_name like #{companNa
 作用：
 
 * 替换SQL语句中的where关键字，最后编译完发给MySQL的时候，还是where关键字
-* 会动态的去掉第一个条件前的 and 
-* 如果所有的参数没有值则不加where关键字
+* ==会动态的去掉第一个条件前的 and==
+* ==如果所有的参数没有值则不加where关键字==
 
-> 注意：需要给每个条件前都加上 and 关键字。
+> 注意：==需要给每个条件前都加上 and 关键字。==
 
 ```xml
     <select id="selectByCondition" resultMap="brandResultMap">
@@ -2038,13 +2120,13 @@ List<Brand> selectByConditionSingle(Brand brand);
     <where>
         <choose>
             <when test="status != null">
-                status = #{status}
+                and status = #{status}
             </when>
             <when test="companyName != null and companyName != '' ">
-                company_name like #{companyName}
+                and company_name like #{companyName}
             </when>
             <when test="brandName != null and brandName != ''">
-                brand_name like #{brandName}
+                and brand_name like #{brandName}
             </when>
         </choose>
     </where>
@@ -2100,21 +2182,13 @@ public void testSelectByConditionSingle() throws IOException {
 
 如上图是我们平时在添加数据时展示的页面，而我们在该页面输入想要的数据后添加 `提交` 按钮，就会将这些数据添加到数据库中。接下来我们就来实现添加数据的操作。
 
-* 编写接口方法
 
-  <img src="../../学习资料/JavaWeb-资料/day05-Mybatis/ppt/assets/image-20210729215351651.png" alt="image-20210729215351651" style="zoom:80%;" />
-
-  参数：除了id之外的所有的数据。id对应的是表中主键值，而主键我们是 ==自动增长== 生成的。
-
-* 编写SQL语句
-
-  <img src="../../学习资料/JavaWeb-资料/day05-Mybatis/ppt/assets/image-20210729215537167.png" alt="image-20210729215537167" style="zoom:80%;" />
-
-* 编写测试方法并执行
 
 ### 7.1  编写接口方法
 
-在 `BrandMapper` 接口中定义添加方法。注意返回值哦，mysql执行完结果应该为被数据库里面被影响的行数。然后Mybatis对这个进行了改进==用int接收得到被影响行数，用boolean接收，得到是否成功，但也可以不要这个信息，用void。==
+在 `BrandMapper` 接口中定义添加方法。注意返回值哦，mysql执行完结果应该为被数据库里面被影响的行数。
+
+==然后Mybatis对这个进行了改进用int接收得到被影响行数，用boolean接收，得到是否成功，但也可以不要这个信息，用void。==
 
 ```java
  /**
@@ -2134,7 +2208,7 @@ int add(Brand brand);
 </insert>
 ```
 
-### 7.3 编写测试方法
+### 7.3 编写测试方法（事务）
 
 在 `test/java` 下的 `com.itheima.mapper`  包下的 `MybatisTest类中` 定义测试方法.
 
@@ -2232,11 +2306,13 @@ Mybatis都给我们做好了，不用再搞一次查询什么的，真滴牛哦�
 
 #### set标签
 
-作用：可以动态的去添加set后面的数据。自动去除逗号，后面不跟值就自动不添加set。
+作用：==可以动态的去添加set后面的数据。自动去除逗号，后面不跟值就自动不添加set。==
 
 你看，假如我们使用sql里面的set，后面加if标签去判断，存在问题在于这个逗号啊！！！，还有一点假如所有数据都为空，那不更加完蛋嘛。
 
-> 注意：每个设置值的那里都要加逗号哦
+> *set* 标签可以用于动态包含需要更新的列，忽略其它不更新的列。
+>
+> **注意：每个设置值的那里都要加逗号哦**
 
 ```xml
 <update id="update">
@@ -2366,7 +2442,7 @@ public void testUpdate() throws IOException {
 
 在 `BrandMapper` 接口中定义根据id删除方法。
 
-返回值可以取 int、boolean、void
+==返回值可以取 int、boolean、void==
 
 ```java
 /**
@@ -2420,7 +2496,7 @@ public void testDeleteById() throws IOException {
 
 如上图所示，用户可以选择多条数据，然后点击上面的 `删除` 按钮，就会删除数据库中对应的多行数据。
 
-所以说，我们需要传入一个数组，存放着需要删除的id。然后Mapper.xml的SQL语句里面需要遍历所有的id。
+==所以说，我们需要传入一个数组，存放着需要删除的id。然后Mapper.xml的SQL语句里面需要遍历所有的id。==
 
 #### foreach标签
 

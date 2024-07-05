@@ -162,7 +162,7 @@ public interface BookMapper extends BaseMapper<Book> {
 }
 ```
 
-MP默认进行了ResultMap的转换哦，"小驼峰——user_name"
+==MP默认进行了ResultMap的转换哦,不用自己写这个映射，"小驼峰userName——user_name"==
 
 ```xml
 <?xml version="1.0" encoding="UTF-8" ?>
@@ -189,7 +189,7 @@ public class Mybatisplus01QuickstartApplication {
 }
 ```
 
-**说明:**Dao接口要想被容器扫描到，有两种解决方案:
+==**说明:**Dao接口要想被容器扫描到，有两种解决方案:==
 
 * 方案一:在Dao接口上添加`@Mapper`注解，并且确保Dao处在引导类所在包或其子包中
   * 该方案的缺点是需要在每一Dao接口中添加注解
@@ -214,7 +214,7 @@ class MpDemoApplicationTests {
 
 **说明:**
 
-userDao注入的时候下面有红线提示的原因是什么?
+==userDao注入的时候下面有红线提示的原因是什么?==
 
 * UserDao是一个接口，不能实例化对象
 
@@ -227,6 +227,8 @@ userDao注入的时候下面有红线提示的原因是什么?
 ![1630999646096](images/1630999646096.png)
 
 跟之前整合MyBatis相比，你会发现我们不需要在DAO接口中编写方法和SQL语句了，只需要继承`BaseMapper`接口即可。整体来说简化很多。
+
+
 
 
 
@@ -570,19 +572,16 @@ lqw.last("limit 300");
   application.yml添加如下内容:
 
   ```yml
+  mybatis-plus:
+    configuration:
+      log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    global-config:
+      banner: off # 关闭mybatisplus启动图标
 # mybatis-plus日志控制台输出
-mybatis-plus:
-  configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-  global-config:
-    banner: off # 关闭mybatisplus启动图标
-  ```
 
-3. **取消SpringBoot的log打印**
 
-  ![1631021269422](images/1631021269422.png)
-
-  application.yml添加如下内容:
+  ```yml
+application.yml添加如下内容:
 
   ```yml
 spring:
@@ -594,11 +593,11 @@ spring:
 
 取消这些东西前，日志台的打印：
 
-<img src="images/image-20220521172241197.png" alt="image-20220521172241197" style="zoom:80%;" />
+<img src="images/image-20220521172241197.png" alt="image-20220521172241197" style="zoom: 50%;" />
 
 Then
 
-<img src="images/image-20220521172418781.png" alt="image-20220521172418781" style="zoom:80%;" />
+<img src="images/image-20220521172418781.png" alt="image-20220521172418781" style="zoom: 50%;" />
 
 # 4. DQL编程控制
 
@@ -1211,7 +1210,7 @@ public class User {
 
 # 5. DML编程控制
 
-查询相关的操作我们已经介绍完了，紧接着我们需要对另外三个，增删改进行内容的讲解。挨个来说明下，首先是新增(insert)中的内容。
+查询相关的操作我们已经介绍完了，紧接着我们需要对另外三个，**增删改**进行内容的讲解。挨个来说明下，首先是新增(insert)中的内容。
 
 ## 5.1 id生成策略控制
 
@@ -1773,8 +1772,8 @@ public class User {
     @TableField(exist=false)
     private Integer online;
   
+     //value为未删除数据的值，delval为删除数据的值
     @TableLogic(value="0",delval="1")
-    //value为正常数据的值，delval为删除数据的值
     private Integer deleted;
 }
 ```
