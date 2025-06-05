@@ -1064,26 +1064,24 @@ boolean updateByIds(@Param("ids") String[] ids, @Param("bridgeAlertRecord") Brid
 /*
   MyBatis 参数封装：
     * 单个参数：
-        1. POJO类型：直接使用，实体类属性名 和 参数占位符名称 一致
+        1. POJO类型：直接使用，参数占位符名称 和 实体类成员属性名 一致（不需要用实体类.属性名的方式，因为就一个撒，如果有多个就需要）
         
-        2. Map集合：直接使用，Map的键名 和 参数占位符名称 一致
+        2. 基本数据类型和其对应包装类，直接使用，#{随便写}参数占位符名称 叫什么都可以，反正就一个单独的输入，也不会有歧义。尽量做到见名知意
         
-        3. Collection：封装为Map集合，接口参数可以使用@Param注解，替换Map集合中默认的arg键名
+        3. Map集合：直接使用，Map的键名 和 参数占位符名称 一致
+        
+        4. Collection：封装为Map集合，接口参数可以使用@Param注解，替换Map集合中默认的arg键名
             map.put("arg0",collection集合);
             map.put("collection",collection集合);
             
-        4. List：封装为Map集合，接口参数可以使用@Param注解，替换Map集合中默认的arg键名
+        5. List：封装为Map集合，接口参数可以使用@Param注解，替换Map集合中默认的arg键名
             map.put("arg0",list集合);
             map.put("collection",list集合);
             map.put("list",list集合);
             
-        5. Array数组：封装为Map集合，接口参数可以使用@Param注解，替换Map集合中默认的arg键名
+        6. Array数组：封装为Map集合，接口参数可以使用@Param注解，替换Map集合中默认的arg键名
             map.put("arg0",数组);
             map.put("array",数组);
-            
-        6. 其他类型，如int、String、float等：直接使用，#{随便写}参数占位符名称 叫什么都可以，反正就一个单独的输入，也不会有歧义。
-        	 尽量做到见名知意
-      
 ```
 
 * POJO 类型
