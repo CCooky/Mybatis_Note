@@ -741,7 +741,7 @@ public class MyDateTypeHandler extends BaseTypeHandler<Date> {
 
 <img src="images/image-20220314122111625.png" alt="image-20220314122111625" style="zoom:67%;" />
 
-###  **6. plugins标签-插件功能**
+###  **6. plugins标签-插件功能**-分页
 
 **MyBatis可以使用第三方的插件来对功能进行扩展**，**分页助手PageHelper**是将分页的复杂操作进行封装，使用简单的方式即可获得分页的相关数据。**使用分页助手不用添加什么其他的代码，也不用继承实现之类的，他就像我们的IDEA里面的插件，只要配置了就会在内部直接起作用，卧槽真的舒服！！！**
 
@@ -782,8 +782,6 @@ public class MyDateTypeHandler extends BaseTypeHandler<Date> {
 
 第三步：直接使用，666666
 
-==这个相对于不是在数据库里面做分页，而是直接查询数据完后，拿到我们持久层代码做分页==
-
 ```java
 @Test
 public void test3() throws IOException {
@@ -793,7 +791,7 @@ public void test3() throws IOException {
   // 
     UserMapper mapper = sqlSession.getMapper(UserMapper.class);
 
-    //设置分页相关参数   当前页+每页显示的条数
+    //设置分页相关参数   当前页+每页显示的条数（进行sql语句拦截，做的分页）
     PageHelper.startPage(1,3);
 
     List<User> userList = mapper.findAll();
@@ -1189,15 +1187,6 @@ Brand selectById(int id);
 
 
 
-### 6.2 更新数据时更新时间字段
-
-```sql
-update goods_msg SET update_date = DATE_FORMAT(NOW(),'%Y-%m-%d %H:%i:%s') WHERE id = '1111122222';
--- 对应时间格式2022-2-20 12:30:30
-```
-
-
-
 ### 6.3 ${ }的使用场景
 
 我们知道，在一般情况下，在查询数据时，是确定了表格名字的，这样一来，每一张表格基本都会对应一个[实体类](https://so.csdn.net/so/search?q=实体类&spm=1001.2101.3001.7020)，但也有例外的情况，在某些特殊需求中，我们要**先通过给的条件确定查询哪一种表的**，因此我们需要考虑动态查询表数据的方案。
@@ -1241,7 +1230,7 @@ public interface BridgeJsdDataMapper extends BaseMapper<BridgeJsdData> {
 
 
 
-## 7. Mybatis多表查询
+## 7. Mybatis多表查询（一般不用，DB尽量简单）
 
 之前学习数据库的时候，已经学习过了多表查询的分类，以及sql语句的写法。
 
@@ -1442,7 +1431,11 @@ WHERE u.id=ur.userId AND ur.roleId=r.id
 
 
 
-# 大型案例
+
+
+
+
+# 案例（动态sql+注解）
 
 ## 1. 需求
 
@@ -1657,7 +1650,7 @@ public void testSelectAll() throws IOException {
 * 给字段起别名
 * 使用resultMap定义字段和属性的映射关系
 
-### 3.4 起别名解决上诉问题
+### 3.4 字段名与对象属性名的映射失败
 
 从上面结果可以看到 `brandName` 和 `companyName` 这两个属性的数据没有封装成功，查询 实体类 和 表中的字段 发现，在实体类中属性名是 `brandName` 和 `companyName` ，而表中的字段名为 `brand_name` 和 `company_name`，如下图所示 。那么我们只需要保持这两部分的名称一致这个问题就迎刃而解。
 
@@ -1669,7 +1662,7 @@ public void testSelectAll() throws IOException {
 
 太麻烦了，不写了直接看下面的resultMap。
 
-### 3.5 resultMap解决上述问题
+### 3.5 resultMap解决映射问题
 
 ==使用resultMap来定义数据库字段和实体类属性的映射关系的方式解决上述问题。==
 
@@ -2630,3 +2623,454 @@ Mybatis 针对 CURD 操作都提供了对应的注解，已经做到见名知意
 <img src="images/image-20210805234842497.png" alt="image-20210805234842497" style="zoom:70%;" />
 
 上述代码将java代码和SQL语句融到了一块，使得代码的可读性大幅度降低。
+
+
+
+# Mybatis代码生成器
+
+
+
+Mybatis Generator（MBG）是Mybatis官方提供的一个代码生成工具，它可以根据数据库表自动生成对应的Java Model、Mapper和XML文件，甚至还可以生成一些高级查询功能，使用Mybatis-Generator可以大大降低开发者的工作量，提高开发效率！
+
+>  支持使用Maven插件生成，也支持编写Java代码生成，还有命令行等等多种方式！ 支持生成XML映射文件风格的代码，也支持生成全注解风格的代码！
+
+我们使用 **Maven插件+generatorConfig.xml** 配置文件的方式进行，最简单方便了
+
+
+
+
+
+## 1.安装maven插件
+
+首先引入Mybatis的依赖哦，并且由于要操作数据库，引入对应数据库MYSQL的依赖：
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>mysql</groupId>
+        <artifactId>mysql-connector-java</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.mybatis.spring.boot</groupId>
+        <artifactId>mybatis-spring-boot-starter</artifactId>
+    </dependency>
+</dependencies>
+```
+
+**引入插件：**
+
+1、在工程tg-book-dal的pom.xml中，根节点project下添加**build节点**，如下：
+
+```xml
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.mybatis.generator</groupId>
+            <artifactId>mybatis-generator-maven-plugin</artifactId>
+            <version>1.4.0</version>
+          	<configuration>
+       <!-- 配置文件的路径（默认找 src/main/resources/generatorConfig.xml ）可以不配置，文件命名使用默认--> 
+   						 <!-- <configurationFile>src/main/resources/mybatis-generator-config.xml</configurationFile> -->
+              <!-- 每次运行生成器时覆盖原始的旧文件，采用追加覆盖的方式 NICE--> 
+              <overwrite>true</overwrite>
+              <!--输出详细生成日志 -->
+              <verbose>true</verbose>
+						</configuration>
+        </plugin>
+    </plugins>
+</build>
+```
+
+2、**在插件中再次引入数据库依赖，**虽然在项目的 `pom.xml` 文件中我们已经配置了数据库的相关依赖，但是在 MyBatis Generator 配置中仍然需要对其进行再次配置。此时，这里有两种方式供我们选择。
+
+- 第一种是再次在引入数据库依赖，具体配置方式如下：
+
+  ```xml
+  <build>
+      <plugins>
+          <plugin>
+              <groupId>org.mybatis.generator</groupId>
+              <artifactId>mybatis-generator-maven-plugin</artifactId>
+              <version>1.4.0</version>
+              <dependencies>
+                  <dependency>
+                      <groupId>mysql</groupId>
+                      <artifactId>mysql-connector-java</artifactId>
+                      <version>8.0.17</version>
+                  </dependency>
+              </dependencies>
+            	<configuration>
+         <!-- 配置文件的路径（默认找 src/main/resources/generatorConfig.xml ）可以不配置，文件命名使用默认--> 
+     						<configurationFile>src/main/resources/mybatis-generator-config.xml</configurationFile>
+                <!-- 每次运行生成器时覆盖原始的旧文件，采用追加覆盖的方式 NICE--> 
+                <overwrite>true</overwrite>
+                <!--输出详细生成日志 -->
+                <verbose>true</verbose>
+  						</configuration>
+          </plugin>
+      </plugins>
+  </build>
+  ```
+
+- 第二种则是利用 Maven 的 `includeCompileDependencies` 属性。一般来讲，我们的项目中肯定已经引入过数据库的相关依赖了，那我们此时配置 `includeCompileDependencies` 就好了，具体配置方式如下：
+
+- ==选这种！！！！==
+
+  ```xml
+  <build>
+      <plugins>
+          <plugin>
+              <groupId>org.mybatis.generator</groupId>
+              <artifactId>mybatis-generator-maven-plugin</artifactId>
+              <version>1.4.0</version>
+            	<configuration>
+         <!-- 配置文件的路径（默认找 src/main/resources/generatorConfig.xml ）可以不配置，文件命名使用默认--> 
+     						<!-- <configurationFile>src/main/resources/mybatis-generator-config.xml</configurationFile> -->
+                <!-- 每次运行生成器时覆盖原始的旧文件，采用追加覆盖的方式 NICE--> 
+                <overwrite>true</overwrite>
+                <!--输出详细生成日志 -->
+                <verbose>true</verbose>
+                <includeCompileDependencies>true</includeCompileDependencies>
+  						</configuration>
+          </plugin>
+      </plugins>
+  </build>
+  ```
+
+  
+
+最后刷新tg-book-dal的Maven依赖，你就能看到**mybatis-generator插件**了，如下图：
+
+<img src="images/56aa78faa8aec22b7a0c046827f83e7f.png" alt="在这里插入图片描述" style="zoom:67%;" />
+
+ 注意，这时生成时会报错，因为我们还需要添加配置文件，接着向下看。
+
+
+
+## 2.配置文件generatorConfig.xml
+
+[MyBatis Generator Core – MyBatis Generator XML Configuration File Reference](https://mybatis.org/generator/configreference/xmlconfig.html)
+
+[MyBatis学习笔记（五）：代码生成器 | 程序人生 (zjxkenshine.github.io)](https://zjxkenshine.github.io/2018/03/29/MyBatis学习笔记（五）：代码生成器/)
+
+[MyBatis Generator 代码自动生成器，从此解放你的双手 - JavaPark - SegmentFault 思否](https://segmentfault.com/a/1190000041115591)
+
+官方提供的插件列表：[MyBatis Generator Core – Supplied Plugins](https://mybatis.org/generator/reference/plugins.html)
+
+在tg-book-dal 的 src/main/resources 下 添加配置文件： **generatorConfig.xml** ，用于配置`生成风格，数据库连接、生成代码包路径、生成哪些表`等等，各配置参数详解参考注释：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE generatorConfiguration
+        PUBLIC "-//mybatis.org//DTD MyBatis Generator Configuration 1.0//EN"
+        "http://mybatis.org/dtd/mybatis-generator-config_1_0.dtd">
+<!-- 配置生成器 -->
+<generatorConfiguration>
+
+    <!-- 引入外部配置文件（通常是数据库的连接配置文件） -->
+    <properties resource="jdbc.properties"/>
+
+    <!-- 配置对象环境 、生成代码风格、已经库表、实体类关系 -->
+    <!-- context 上下文对象可以有多个，id为唯一标识-->
+    <!-- defaultModelType它有两个可选的值：conditional和flat。-->
+    <!--    1、conditional是默认值，表示根据具体情况生成不同类型的持久化对象（PO）。这意味着当数据库中存在一对一或一对多的关系时，生成的PO可能会包含关联属性。-->
+    <!--    2、flat表示生成单表对应的PO，也就是常见的一个配置方式。这意味着每个数据库表都将对应生成一个PO对象，不会包含关联属性。-->
+    <context id="MBG3" targetRuntime="MyBatis3" defaultModelType="flat">
+
+        <property name="javaFileEncoding" value="UTF-8"/>
+        <!-- 分割符的三个配置，详情见下方说明  一般配置上就好了      -->
+        <property name="autoDelimitKeyword" value="true"/>
+        <property name="beginningDemiliter" value="`"/>
+        <property name="endingDemiliter" value="`"/>
+
+        <!--配置插件，这里有很多插件可以选择，每种插件提供不同功能 见官方提供的插件列表 -->
+        <!--1、默认生成的PO中，只包含了setter/getter，如下插件生成对应equals和hashCode方法-->
+        <plugin type="org.mybatis.generator.plugins.EqualsHashCodePlugin"/>
+        <!--2、生成toString方法 -->
+        <!--3、可惜官方没有和lombok打通，但可以自定义实现生成lombok的注解 -->
+        <plugin type="org.mybatis.generator.plugins.ToStringPlugin"/>
+
+        <!--配置生成的注释，默认情况下是会生成注释的，而且会带上时间戳，如果我们不需要这些配置，则可以通过如下配置来清除：-->
+        <commentGenerator>
+            <!-- 是否去除自动生成的注释 true：是 ，false:否 -->
+            <property name="suppressAllComments" value="true"/>
+            <!-- 是否去除自动生成的时间戳 true：是，false:否 -->
+            <property name="suppressDate" value="true"/>
+            <!-- 是否添加数据库表中字段的注释 true：是，false:否，只有当suppressAllComments 为 false 时才能生效 -->
+            <property name="addRemarkComments" value="true"/>
+        </commentGenerator>
+
+        <!-- 数据库连接 -->
+        <jdbcConnection driverClass="${jdbc.driver-class-name}"
+                        connectionURL="${jdbc.url}"
+                        userId="${jdbc.username}"
+                        password="${jdbc.password}">
+            <!--8.0高版本的 mysql-connector-java 需要设置 nullCatalogMeansCurrent=true 作用是只读取url设置下的数据库的表，否则会去整个服务器全部数据库中查找需要的表-->
+            <property name="nullCatalogMeansCurrent" value="true"/>
+        </jdbcConnection>
+
+        <!--配置 JDBC 和 Java 中的类型转换规则，如果我们不配置，会采用默认的一套转换规则，
+            而如果我们需要自定义，也只能配置 bigDecimal、NUMERIC 和时间类型，不能去配置其他类型，否则会导致出错-->
+        <javaTypeResolver>
+            <!--该属性默认为 false，会有一个默认的转换规则，是根据数据库中的数据类型来确定Java中的数据类型
+                若该属性为 true，此时强制把 JDBC DECIMAL 和 NUMERIC 类型解析为 java.math.BigDecimal。   -->
+            <property name="forceBigDecimals" value="false"/>
+            <!--该属性默认为 false，它会将 JDBC 所有的时间类型都解析为 java.util.Date，
+                若该属性为 true，则 DATE解析为 java.time.LocalDate；TIME 解析为 java.time.LocalTime ；TIMESTAMP解析为  java.time.LocalDateTime-->
+            <property name="useJSR310Types" value="true"/>
+        </javaTypeResolver>
+
+        <!-- 生成PO的包名和位置 -->
+        <javaModelGenerator targetPackage="com.ccooky.demo.infra.PO" targetProject="src/main/java">
+            <!-- 是否让 schema（数据库名） 作为包的后缀，默认为 false -->
+            <property name="enableSubPackages" value="false"/>
+            <!-- 在执行 SQL 查询时是否自动去除查询语句中 输入字符串参数 的首尾空格，默认为false -->
+            <property name="trimStrings" value="true"/>
+        </javaModelGenerator>
+
+        <!-- 生成sql XML映射文件的包名和位置  不配置该标签则不会生成。-->
+        <sqlMapGenerator targetPackage="com.ccooky.demo.infra.mapper" targetProject="src/main/resources"/>
+
+        <!-- 生成Mapper接口的包名和位置  不配置该标签则不会生成Mapper接口。-->
+        <!-- type属性比较重要   根据targetRuntime的设置分为两类：
+             Mybatis3： ANNOTATRFMAPPER：基于注解的Mapper，不会有对应的xml文件生成，会有SQL provider
+                        ✅MIXEDMAPPER：xml和注解混合模式，SQL provider会被XML代替(简单的用注解，复杂的使用xml)
+                        XMLMAPPER：所有方法都在XML中，接口用依赖Xml文件。
+             Mybatis3Simple：
+                        ANNOTATRFMAPPER：基于注解的Mapper，不会有对应的xml文件生成
+                        XMLMAPPER：所有方法都在XML中，接口用依赖Xml文件。-->
+        <javaClientGenerator type="XMLMAPPER" targetPackage="com.ccooky.demo.infra.mapper" targetProject="src/main/java"/>
+
+        <!-- 配置需要自动生成代码的 数据库的表名 -->
+        <!-- schema 是数据库名，有的数据库需要配置，有的数据库mysql不需要配置 <table schema="xxx" tableName="user" domainObjectName="User">-->
+        <table tableName="tb_brand" domainObjectName="Brand">
+            <!-- 针对mysql的 自增主键列 必须配置 -->
+            <generatedKey column="id" sqlStatement="MYSQL" identity="true"/>
+        </table>
+    </context>
+
+</generatorConfiguration>
+```
+
+其中，关于外部文件 jdbc.properties` 的配置具体如下，主要对数据库的相关属性进行配置。
+
+```ini
+jdbc.username=root
+jdbc.password=12345678
+# 三个额外参数必须配置，时区为北京东8区
+jdbc.url=jdbc:mysql://localhost:3306/demo?useSSL=false&characterEncoding=UTF-8&serverTimezone=GMT%2B8
+jdbc.driver-class-name=com.mysql.cj.jdbc.Driver
+```
+
+几个配置的额外说明：
+
+<img src="images/image-20240719111435251.png" alt="image-20240719111435251" style="zoom: 50%;" />
+
+时间类型的属性详解：
+
+<img src="images/image-20240719105640868.png" alt="image-20240719105640868" style="zoom: 50%;" />
+
+
+
+#### MyBatis3Simple风格
+
+上面配置的是MyBatis3Simple风格，只配置了一个表：user，双击插件的mybatis-generator:generate以后，生成的代码如下：
+
+<img src="images/33a42eb3256da7a7ab280f3ad8632899.png" alt="在这里插入图片描述" style="zoom: 50%;" />
+
+**MyBatis3Simple**风格生成的代码比较精简，看一看UserMapper的接口方法，只有基本的增删改查方法：
+
+```java
+public interface UserMapper {
+    int deleteByPrimaryKey(Integer id);
+
+    int insert(User record);
+
+    User selectByPrimaryKey(Integer id);
+
+    List<User> selectAll();
+
+    int updateByPrimaryKey(User record);
+}
+```
+
+#### MyBatis3风格
+
+**会生成与Example相关的方法**
+
+我们再看看**MyBatis3**风格，只需要将 targetRuntime=“MyBatis3Simple” 修改为 targetRuntime=“MyBatis3”，然后再双击插件的mybatis-generator:generate，就可以看到增加了 “by example” 和 “selective” 方法。
+
+<img src="images/ea64f45ecdace063fd6feb8a4f264813.png" alt="在这里插入图片描述" style="zoom:67%;" />
+
+- **selective方法**：选择性插入或更新，判断PO字段不为空才插入或修改。在只需要插入或修改个别字段值时使用，对应生成的SQL不包括`=null`的字段，但同样也需要注意，你无法用它将字段设置为null。 😜
+
+- **by example方法**：这个东西有点小强大，可以动态生成各种查询条件，在后面的接口开发实战中我们再使用。但就是生成的代码有点多，没有实现example代码的复用。对于单表复杂查询喜欢直接SQL的，可以禁用生成example，可以通过table节点的如下配置来指定是否启用。
+
+  目前公司采用的是这个by example的方法，蛮好用的，有点类似于MybatisPlus的那个条件查询的Wrapper。
+  
+  他可以配置是否要生成，一般我们就是要Mybatis3风格，自动生成，不需要手动设置
+  
+  <img src="images/image-20240719113401434.png" alt="image-20240719113401434" style="zoom: 33%;" />
+
+
+
+#### MyBatis3DynamicSql风格（不用）
+
+只需要将 targetRuntime=“MyBatis3” 修改为 targetRuntime=“MyBatis3DynamicSql”。 生成的代码是全注解风格的，也就不会生成UserMapper.xml和UserExample类，而是新生成了UserDynamicSqlSupport类。
+
+需要增加**mybatis-dynamic-sql**依赖包：
+
+```xml
+<!--mybatis-dynamic-sql-->
+<dependency>
+    <groupId>org.mybatis.dynamic-sql</groupId>
+    <artifactId>mybatis-dynamic-sql</artifactId>
+    <version>1.1.4</version>
+</dependency>
+```
+
+
+
+## 3. example的方法使用
+
+简单看一个demo就知道了，和MybatisPlus的Wrapper几乎一模一样。
+
+<img src="images/image-20240719113554089.png" alt="image-20240719113554089" style="zoom: 67%;" />
+
+一共有四个example的方法，此外还有**selective**方法。
+
+- SelectByExample
+- DeleteByExample
+- CountByExample
+- UpdateByExample
+
+
+
+## 4. 分页
+
+**MyBatis可以使用第三方的插件来对功能进行扩展**，**分页助手PageHelper**是将分页的复杂操作进行封装，使用简单的方式即可获得分页的相关数据。使用分页助手不用添加什么其他的代码，也不用继承实现之类的，他就像我们的IDEA里面的插件，只要配置了就会在内部直接起作用！！！
+
+**注意⚠️**
+
+- PageHelper 的作用范围是线程级别的，会影响同一线程中的下一次查询。
+- 它只会影响紧随**其后的第一个查询**操作。
+
+开发步骤：
+
+① 导入通用PageHelper的坐标
+
+② 在mybatis核心配置文件中配置PageHelper插件
+
+③ 测试分页数据获取
+
+第一步：pom.xml
+
+```xml
+<dependency>
+    <groupId>com.github.pagehelper</groupId>
+    <artifactId>pagehelper</artifactId>
+    <version>3.7.5</version>
+</dependency>
+<dependency>
+    <groupId>com.github.jsqlparser</groupId>
+    <artifactId>jsqlparser</artifactId>
+    <version>0.9.1</version>
+</dependency>
+```
+
+第二步：mybatis-config.xml
+
+```xml
+<!--配置分页助手插件-->
+<plugins>
+    <plugin interceptor="com.github.pagehelper.PageHelper">
+      	<!-- 指定方言 -->
+        <property name="dialect" value="mysql"></property>
+    </plugin>
+</plugins>
+```
+
+第三步：直接使用
+
+```java
+public List<YourEntity> pageQueryWithPageHelper(int pageNum, int pageSize, String someCondition) {
+   //开启分页插件，内部拦截sql进行修改
+    PageHelper.startPage(pageNum, pageSize);
+    
+    YourEntityExample example = new YourEntityExample();
+    YourEntityExample.Criteria criteria = example.createCriteria();
+    if (StringUtils.isNotBlank(someCondition)) {
+        criteria.andSomeFieldEqualTo(someCondition);
+    }
+    example.setOrderByClause("id ASC");
+    
+    List<YourEntity> list = yourEntityMapper.selectByExample(example);
+    //PageInfo对象获得与分页相关参数
+    PageInfo<User> pageInfo = new PageInfo<User>(userList);
+    System.out.println("当前页："+pageInfo.getPageNum());
+    System.out.println("每页显示条数："+pageInfo.getPageSize());
+    System.out.println("总条数："+pageInfo.getTotal());
+    System.out.println("总页数："+pageInfo.getPages());
+    System.out.println("上一页："+pageInfo.getPrePage());
+    System.out.println("下一页："+pageInfo.getNextPage());
+    System.out.println("是否是第一个："+pageInfo.isIsFirstPage());
+    System.out.println("是否是最后一个："+pageInfo.isIsLastPage());
+  
+    return list;
+}
+```
+
+
+
+## 5.获取插入后id
+
+要返回插入后的ID，可以使用MyBatis的`useGeneratedKeys`和`keyProperty`属性。
+
+MYSQL里面，增、删、改均返回该sql语句影响的数据行数，是不会返回其他信息的。
+
+```java
+@Insert("insert into spy_user(spy_id, name) values(#{spyId}, #{name})")
+@Options(useGeneratedKeys = true, keyProperty = "spyId", keyColumn = "id") // 获取该条记录插入后的id，并且映射到对象的spyId字段上
+int insert(SpyUser spyUser);
+
+@Options 注解包含三个参数:
+useGeneratedKeys = true
+	启用数据库的自增主键功能
+	在插入数据时自动获取数据库生成的主键值
+keyProperty = "id"
+	指定实体类中接收自增主键值的属性名
+	数据插入后，自增的主键值会被赋值给实体对象的 id 属性
+keyColumn = "id"
+	指定数据库表中自增主键的列名
+	表示数据库表中主键列的名称为 id
+```
+
+## 6.联表查询
+
+Mybtais代码生成器的Example，在需要联表查询的场景下，不好用；
+
+- 一种是多查询几次单表，进行填充；会稍微麻烦一点，特别是在分页条件查询时！
+- 二就是写动态sql，在分页条件查询下使用吧！
+
+```xml
+<select id="selectEmpAndDept" resultMap="empDeptResultMap">
+    SELECT e.*, d.*
+    FROM emp e
+    RIGHT JOIN dept d ON e.dep_id = d.did
+    <where>
+        <if test="deptName != null and deptName != ''">
+            AND d.dname = #{deptName}
+        </if>
+        <if test="minSalary != null">
+            AND e.salary >= #{minSalary}
+        </if>
+        <if test="jobTitle != null and jobTitle != ''">
+            AND e.job_title = #{jobTitle}
+        </if>
+    </where>
+    <if test="page != null and pageSize != null">
+        LIMIT #{offset}, #{pageSize}
+    </if>
+</select>
+```
+
